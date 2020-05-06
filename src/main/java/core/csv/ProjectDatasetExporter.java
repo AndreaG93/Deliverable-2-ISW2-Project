@@ -28,14 +28,14 @@ public class ProjectDatasetExporter {
             FileWriter fw = new FileWriter("./ReleaseInfo");
             CSVPrinter printer = new CSVPrinter(fw, CSVFormat.DEFAULT);
 
-            printer.printRecord("Index", "Version ID", "Version Name", "Release Date", "EndOfLife Date");
+            printer.printRecord("Index", "Version ID", "Version Name", "Release Date");
 
 
             for (int i = 1; i < this.project.releases.length; i++) {
 
                 Release currentRelease = this.project.releases[i];
 
-                printer.printRecord(i, currentRelease.id, currentRelease.name, currentRelease.releaseDate, currentRelease.endOfLifeDate);
+                printer.printRecord(i, currentRelease.id, currentRelease.name, currentRelease.releaseDate);
             }
 
 
@@ -50,20 +50,19 @@ public class ProjectDatasetExporter {
     }
 
     public void exportTo(String outputFileDirectory) {
+
         try {
 
             FileWriter fw = new FileWriter(outputFileDirectory);
             CSVPrinter printer = new CSVPrinter(fw, CSVFormat.DEFAULT);
 
-            printer.printRecord("Version ID", "File Name", "Number Of Authors");
+            printer.printRecord("Version ID", "File Name", "Number Of Authors", "Age in Weeks", "LOC");
 
-
-            for (int i = 0; i < this.project.releases.length / 2; i++) {
-
-                Release currentRelease = this.project.releases[i];
+            int currentReleaseIndex = 1;
+            for (Release currentRelease : this.project.releases) {
 
                 for (ProjectFile currentProjectFile : currentRelease.files)
-                    printer.printRecord(i, currentProjectFile.name, currentProjectFile.numberOfAuthors);
+                    printer.printRecord(currentReleaseIndex, currentProjectFile.name, currentProjectFile.numberOfAuthors, currentProjectFile.weekAge, currentProjectFile.LOC);
 
                 break;
             }

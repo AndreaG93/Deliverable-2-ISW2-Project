@@ -4,9 +4,7 @@ import project.Commit;
 import project.ProjectFile;
 
 import java.io.File;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.AbstractMap;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -27,10 +25,15 @@ public abstract class VersionControlSystem {
 
     public abstract void cloneRepositoryLocally();
 
-    public abstract AbstractMap<LocalDateTime, Commit> getAllCommits();
+    public abstract void changeLocalRepositoryStateToCommit(String commitHash);
 
-    public abstract List<ProjectFile> getAllFilesFromCommit(String commitGUID);
+    public abstract double getFileWeekAge(String filename, LocalDateTime releaseDate);
 
-    public abstract int getNumberOfAuthorsOfFile(String filename, LocalDate dateLowerBound, LocalDate dateUpperBound);
+    public abstract int getNumberOfAuthorsOfFile(String filename);
+
+    public abstract long getFileLOC(String filename);
+
+    public abstract Commit getReleaseCommit(LocalDateTime releaseDate);
+
+    public abstract List<ProjectFile> getFiles(String commitHash);
 }
-

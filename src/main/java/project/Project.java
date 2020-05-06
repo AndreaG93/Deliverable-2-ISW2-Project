@@ -27,20 +27,22 @@ public class Project {
         versionControlSystem.cloneRepositoryLocally();
 
         this.releases = ProjectReleases.downloadMetadata(this.name);
-        //this.commits = versionControlSystem.getAllCommits();
 
-        for (int i = 0; i < releases.length / 2; i++) {
+        for (Release currentRelease : this.releases) {
 
-            Release currentRelease = this.releases[i];
+            Commit releaseCommit = this.versionControlSystem.getReleaseCommit(currentRelease.releaseDate);
 
-            Commit lastCommit = this.commits.get(currentRelease.releaseDate);
+            this.versionControlSystem.changeLocalRepositoryStateToCommit(releaseCommit.hash);
 
-            currentRelease.files = this.versionControlSystem.getAllFilesFromCommit(lastCommit.guid);
+            currentRelease.files = this.versionControlSystem.getFiles(releaseCommit.hash);
 
             for (ProjectFile projectFile : currentRelease.files) {
 
-                projectFile.numberOfAuthors = this.versionControlSystem.getNumberOfAuthorsOfFile(projectFile.name, currentRelease.releaseDate, currentRelease.endOfLifeDate);
+                projectFile.numberOfAuthors = this.versionControlSystem.getNumberOfAuthorsOfFile(projectFile.name);
+                projectFile.weekAge = this.versionControlSystem.getFileWeekAge(projectFile.name, releaseCommit.date);
+                projectFile.LOC = this.versionControlSystem.getFileLOC(projectFile.name);
             }
+
             break;
         }
     }

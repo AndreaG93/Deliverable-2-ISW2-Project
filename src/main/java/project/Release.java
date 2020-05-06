@@ -1,14 +1,17 @@
 package project;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class Release {
 
     public int id;
     public String name;
+    public LocalDateTime releaseDate;
 
-    public LocalDate releaseDate;
+    public List<ProjectFile> files;
+
+    /*
     public LocalDate endOfLifeDate;
 
     public List<ProjectFile> files;
@@ -21,4 +24,6 @@ public class Release {
     public String toString() {
         return String.format("--> Release-Info: ID %d,\tRelease Name %s,\t Date %s", this.id, this.name, this.releaseDate.toString());
     }
+    */
+
 }
