@@ -13,6 +13,10 @@ public class Release {
 
     public List<ProjectFile> files;
 
+    public Release() {
+        this.endOfLifeDate = null;
+    }
+
     @Override
     public String toString() {
         return String.format("--> Release-Info: ID %d,\tRelease Name %s,\t Date %s", this.id, this.name, this.releaseDate.toString());

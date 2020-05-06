@@ -4,9 +4,9 @@ import project.Commit;
 import project.ProjectFile;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -102,56 +102,46 @@ public class Git extends VersionControlSystem {
     public List<ProjectFile> getAllFilesFromCommit(String commitGUID) {
 
         List<ProjectFile> output = new ArrayList<>();
+        List<String> gitOutput = executeExternalApplication2("git", "ls-tree", "--name-only", "-r", commitGUID);
 
-        BufferedReader gitOutputReader = executeExternalApplication("git", "ls-tree", "--name-only", "-r", commitGUID);
+        for (String currentOutputString : gitOutput) {
 
-        try {
+            ProjectFile projectFile = new ProjectFile();
+            projectFile.name = currentOutputString;
 
-            for (String currentOutputLine = gitOutputReader.readLine(); currentOutputLine != null; currentOutputLine = gitOutputReader.readLine()) {
-                ProjectFile projectFile = new ProjectFile();
-                projectFile.name = currentOutputLine;
-
-                output.add(projectFile);
-            }
-
-            gitOutputReader.close();
-
-        } catch (IOException e) {
-
-            this.logger.severe(e.getMessage());
-            System.exit(e.hashCode());
+            output.add(projectFile);
         }
 
         return output;
     }
 
+    public int getClocFile(String filename) {
+
+        List<String> gitOutput = executeExternalApplication2("wsl", "cloc", "--quiet", filename);
+
+        String[] output = gitOutput.get(3).split("\\s+");
+
+        return Integer.parseInt(output[4]);
+    }
+
+
     @Override
-    public AbstractMap<LocalDate, Commit> getAllCommits() {
+    public AbstractMap<LocalDateTime, Commit> getAllCommits() {
 
-        AbstractMap<LocalDate, Commit> output = new TreeMap<>();
+        AbstractMap<LocalDateTime, Commit> output = new TreeMap<>();
+        List<String> gitOutput = executeExternalApplication2("git", "log", "--date=iso-strict", "--pretty=format:\"%H<->%cd\"");
 
-        BufferedReader gitOutputReader = executeExternalApplication("git", "log", "--date=iso-strict", "--pretty=format:\"%H<->%cd\"");
+        for (String currentOutputString : gitOutput) {
 
-        try {
+            Commit commit = new Commit();
 
-            for (String currentOutputLine = gitOutputReader.readLine(); currentOutputLine != null; currentOutputLine = gitOutputReader.readLine()) {
-                Commit commit = new Commit();
+            String[] commitInfo = currentOutputString.split("<->");
 
-                String[] commitInfo = currentOutputLine.split("<->");
+            commit.guid = commitInfo[0];
+            commit.date = LocalDateTime.parse(commitInfo[1], DateTimeFormatter.ISO_OFFSET_DATE_TIME);
 
-                commit.guid = commitInfo[0];
-                commit.date = LocalDate.parse(commitInfo[1], DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-
-                if (!output.containsKey(commit.date))
-                    output.put(commit.date, commit);
-            }
-
-            gitOutputReader.close();
-
-        } catch (Exception e) {
-
-            this.logger.severe(e.getMessage());
-            System.exit(e.hashCode());
+            if (!output.containsKey(commit.date))
+                output.put(commit.date, commit);
         }
 
         return output;
@@ -159,28 +149,14 @@ public class Git extends VersionControlSystem {
 
     public int getNumberOfAuthorsOfFile(String filename, LocalDate dateLowerBound, LocalDate dateUpperBound) {
 
-        int output = 0;
-        BufferedReader gitOutputReader;
+        List<String> gitOutput;
 
         if (dateUpperBound != null)
-            gitOutputReader = executeExternalApplication("git", "shortlog", "--summary", "--after=", dateLowerBound.toString(), "--before=", dateUpperBound.toString(), filename);
+            gitOutput = executeExternalApplication2("git", "shortlog", "--summary", "--after=", dateLowerBound.toString(), "--before=", dateUpperBound.toString(), filename);
         else
-            gitOutputReader = executeExternalApplication("git", "shortlog", "--summary", "--after=", dateLowerBound.toString(), filename);
+            gitOutput = executeExternalApplication2("git", "shortlog", "--summary", "--after=", dateLowerBound.toString(), filename);
 
-        try {
-
-            for (String currentOutputLine = gitOutputReader.readLine(); currentOutputLine != null; currentOutputLine = gitOutputReader.readLine())
-                output++;
-
-            gitOutputReader.close();
-
-        } catch (Exception e) {
-
-            this.logger.severe(e.getMessage());
-            System.exit(e.hashCode());
-        }
-
-        return output;
+        return gitOutput.size();
     }
 
 
@@ -189,4 +165,15 @@ public class Git extends VersionControlSystem {
     // git log --date=iso --pretty=format:"%H -> %cd"
     // git log --until 2013-05-21 --pretty="short" --name-only
     // git diff-tree --name-status -r @{3} master
+    // git ls-files
+    //  git log --before=2015-10-19
+    //  git log --before=2015-10-20
+
+    // git checkout hash
+
+    // git log --reverse --max-count=1 --date=iso-strict --pretty=format:"%cd" pom.xml
+
+
+    // 5a381391031c2756bf0927f4246e20e220306f8d  TAG
+    // bce3e8bd54cb7b7f27a2cfe11a4878d5bbcb473e
 }

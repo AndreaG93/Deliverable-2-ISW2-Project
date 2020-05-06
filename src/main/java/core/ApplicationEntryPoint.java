@@ -11,7 +11,7 @@ public class ApplicationEntryPoint {
     private static final String projectRepositoryURL = "https://github.com/apache/tinkerpop";
 
     public static void main(String[] args) {
-
+        
         Logger logger = Logger.getLogger(ApplicationEntryPoint.class.getName());
         Project project = new Project(projectName, projectRepositoryURL);
 

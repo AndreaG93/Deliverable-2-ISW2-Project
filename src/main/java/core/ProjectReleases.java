@@ -16,7 +16,7 @@ public class ProjectReleases {
     public static final Logger logger = Logger.getLogger(ProjectReleases.class.getName());
     private static final String[] releaseProperties = {"releaseDate", "name", "id"};
 
-    public static AbstractMap<LocalDate, Release> downloadMetadata(String projectName) {
+    public static Release[] downloadMetadata(String projectName) {
 
         AbstractMap<LocalDate, Release> output = new TreeMap<>();
 
@@ -40,7 +40,7 @@ public class ProjectReleases {
 
                         Field field = Release.class.getField(releaseProperty);
 
-                        if (field.getType().getName().equals("java.time.LocalDateTime"))
+                        if (field.getType().getName().equals("java.time.LocalDate"))
                             field.set(currentRelease, LocalDate.parse(propertyValue));
                         else if (field.getType().getName().equals("int"))
                             field.set(currentRelease, Integer.parseInt(propertyValue));
@@ -60,10 +60,22 @@ public class ProjectReleases {
                 }
             }
 
-            if (!isCurrentReleaseDiscarded)
+            if (!isCurrentReleaseDiscarded) {
                 output.put(currentRelease.releaseDate, currentRelease);
+            }
         }
 
-        return output;
+
+        Release[] dd = output.values().toArray(new Release[0]);
+
+        for (int i = 0; i < dd.length - 1; i++) {
+
+            Release currentRelease = dd[i];
+
+            currentRelease.endOfLifeDate = dd[i + 1].releaseDate;
+        }
+
+
+        return dd;
     }
 }

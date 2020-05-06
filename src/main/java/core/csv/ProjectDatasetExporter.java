@@ -8,8 +8,6 @@ import project.Release;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.logging.Logger;
 
 public class ProjectDatasetExporter {
@@ -30,17 +28,16 @@ public class ProjectDatasetExporter {
             FileWriter fw = new FileWriter("./ReleaseInfo");
             CSVPrinter printer = new CSVPrinter(fw, CSVFormat.DEFAULT);
 
-            printer.printRecord("Index", "Version ID", "Version Name", "Date");
+            printer.printRecord("Index", "Version ID", "Version Name", "Release Date", "EndOfLife Date");
 
-            int currentReleaseIndex = 1;
-            for (Map.Entry<LocalDateTime, Release> releaseEntry : this.project.releases.entrySet()) {
 
-                Release currentRelease = releaseEntry.getValue();
+            for (int i = 1; i < this.project.releases.length; i++) {
 
-                printer.printRecord(currentReleaseIndex, currentRelease.id, currentRelease.name, currentRelease.releaseDate);
+                Release currentRelease = this.project.releases[i];
 
-                currentReleaseIndex++;
+                printer.printRecord(i, currentRelease.id, currentRelease.name, currentRelease.releaseDate, currentRelease.endOfLifeDate);
             }
+
 
             printer.close();
             fw.close();
@@ -60,15 +57,15 @@ public class ProjectDatasetExporter {
 
             printer.printRecord("Version ID", "File Name", "Number Of Authors");
 
-            int currentReleaseIndex = 1;
-            for (Map.Entry<LocalDateTime, Release> releaseEntry : this.project.releases.entrySet()) {
 
-                Release currentRelease = releaseEntry.getValue();
+            for (int i = 0; i < this.project.releases.length / 2; i++) {
+
+                Release currentRelease = this.project.releases[i];
 
                 for (ProjectFile currentProjectFile : currentRelease.files)
-                    printer.printRecord(currentReleaseIndex, currentProjectFile.name, currentProjectFile.numberOfAuthors);
+                    printer.printRecord(i, currentProjectFile.name, currentProjectFile.numberOfAuthors);
 
-                currentReleaseIndex++;
+                break;
             }
 
             printer.close();
