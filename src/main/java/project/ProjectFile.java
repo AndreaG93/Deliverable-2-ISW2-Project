@@ -1,8 +1,10 @@
 package project;
 
+import java.util.List;
+
 public class ProjectFile {
 
     public String name;
-    public int numberOfAuthors;
+    public List<String> authors;
     boolean isBuggy;
 }

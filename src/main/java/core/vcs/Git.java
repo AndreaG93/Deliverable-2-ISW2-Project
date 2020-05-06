@@ -4,16 +4,12 @@ import project.Commit;
 import project.ProjectFile;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.TreeMap;
+import java.util.*;
 
 public class Git extends VersionControlSystem {
 
@@ -21,14 +17,27 @@ public class Git extends VersionControlSystem {
         super(repositoryURL, repositoryLocalDirectory);
     }
 
-    private static String readErrors(Process p) throws IOException {
-        StringBuilder bld = new StringBuilder();
-        String line = "";
-        BufferedReader stdError = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-        while ((line = stdError.readLine()) != null)
-            bld.append(line);
-        return bld.toString();
+    private BufferedReader executeGitApplication(List<String> commands) {
+
+        BufferedReader output = null;
+
+        ProcessBuilder processBuilder = new ProcessBuilder(commands);
+        processBuilder.directory(this.repositoryLocalDirectory);
+
+        try {
+
+            Process process = processBuilder.start();
+            output = new BufferedReader(new InputStreamReader(process.getInputStream()));
+
+        } catch (IOException e) {
+
+            e.printStackTrace();
+            System.exit(e.hashCode());
+        }
+
+        return output;
     }
+
 
     @Override
     public void cloneRepositoryLocally() {
@@ -63,20 +72,14 @@ public class Git extends VersionControlSystem {
 
         List<ProjectFile> output = new ArrayList<>();
 
-        ProcessBuilder processBuilder = new ProcessBuilder("git", "ls-tree", "--name-only", "-r", commitGUID);
-        processBuilder.directory(this.repositoryLocalDirectory);
+        List<String> gitCommands = Arrays.asList("git", "ls-tree", "--name-only", "-r", commitGUID);
+        BufferedReader gitOutputReader = executeGitApplication(gitCommands);
 
         try {
 
-            Process process = processBuilder.start();
-            BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
-
-            String currentLine;
-
-            while ((currentLine = stdInput.readLine()) != null) {
-
+            for (String currentOutputLine = gitOutputReader.readLine(); currentOutputLine != null; currentOutputLine = gitOutputReader.readLine()) {
                 ProjectFile projectFile = new ProjectFile();
-                projectFile.name = currentLine;
+                projectFile.name = currentOutputLine;
 
                 output.add(projectFile);
             }
@@ -95,27 +98,57 @@ public class Git extends VersionControlSystem {
 
         AbstractMap<LocalDateTime, Commit> output = new TreeMap<>();
 
-        ProcessBuilder pb = new ProcessBuilder("git", "log", "--date=iso-strict", "--pretty=format:\"%H<->%cd\"");
-        pb.directory(new File("C:\\test"));
+        List<String> gitCommands = Arrays.asList("git", "log", "--date=iso-strict", "--pretty=format:\"%H<->%cd\"");
+        BufferedReader gitOutputReader = executeGitApplication(gitCommands);
 
         try {
 
-            Process p = pb.start();
-
-            BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            String line;
-
-            while ((line = stdInput.readLine()) != null) {
-
+            for (String currentOutputLine = gitOutputReader.readLine(); currentOutputLine != null; currentOutputLine = gitOutputReader.readLine()) {
                 Commit commit = new Commit();
 
-                String[] commitInfo = line.split("<->");
+                String[] commitInfo = currentOutputLine.split("<->");
 
                 commit.guid = commitInfo[0];
                 commit.date = LocalDate.parse(commitInfo[1], DateTimeFormatter.ISO_OFFSET_DATE_TIME).atStartOfDay();
 
                 if (!output.containsKey(commit.date))
                     output.put(commit.date, commit);
+            }
+
+        } catch (Exception e) {
+
+            this.logger.severe(e.getMessage());
+            System.exit(e.hashCode());
+        }
+
+        return output;
+    }
+
+    public List<String> getAuthorsOfFile(String filename) {
+
+        ArrayList<String> output = new ArrayList<>();
+
+        List<String> gitCommands = Arrays.asList("git", "log", "--pretty=format:\"%an\"", filename);
+        BufferedReader gitOutputReader = executeGitApplication(gitCommands);
+
+        try {
+
+
+            for (String currentOutputLine = gitOutputReader.readLine(); currentOutputLine != null; currentOutputLine = gitOutputReader.readLine()) {
+
+                boolean authorAlreadyExist = false;
+                String lowerCaseCurrentLine = currentOutputLine.toLowerCase();
+
+                for (String author : output) {
+                    if (author.contains(lowerCaseCurrentLine)) {
+                        authorAlreadyExist = true;
+                        break;
+                    }
+                }
+
+                if (authorAlreadyExist == false) {
+                    output.add(lowerCaseCurrentLine);
+                }
             }
 
 
@@ -127,6 +160,7 @@ public class Git extends VersionControlSystem {
 
         return output;
     }
+
 
     // git diff --name-only
     // git log
