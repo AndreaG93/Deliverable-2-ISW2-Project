@@ -1,9 +1,10 @@
 package project;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+
 
 public class Commit {
 
     public String guid;
-    public LocalDateTime date;
+    public LocalDate date;
 }

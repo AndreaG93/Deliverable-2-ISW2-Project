@@ -7,9 +7,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.TreeMap;
 
 public class Git extends VersionControlSystem {
 
@@ -17,7 +19,7 @@ public class Git extends VersionControlSystem {
         super(repositoryURL, repositoryLocalDirectory);
     }
 
-    private BufferedReader executeGitApplication(List<String> commands) {
+    private BufferedReader executeExternalApplication(String... commands) {
 
         BufferedReader output = null;
 
@@ -29,7 +31,36 @@ public class Git extends VersionControlSystem {
             Process process = processBuilder.start();
             output = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
-        } catch (IOException e) {
+        } catch (Exception e) {
+
+            e.printStackTrace();
+            System.exit(e.hashCode());
+        }
+
+        return output;
+    }
+
+    private List<String> executeExternalApplication2(String... commands) {
+
+        List<String> output = new ArrayList<>();
+
+        ProcessBuilder processBuilder = new ProcessBuilder(commands);
+        processBuilder.directory(this.repositoryLocalDirectory);
+
+        try {
+
+            Process process = processBuilder.start();
+            InputStreamReader inputStreamReader = new InputStreamReader(process.getInputStream());
+            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+
+            for (String currentLine = bufferedReader.readLine(); currentLine != null; currentLine = bufferedReader.readLine())
+                output.add(currentLine);
+
+            process.getInputStream().close();
+            inputStreamReader.close();
+            bufferedReader.close();
+
+        } catch (Exception e) {
 
             e.printStackTrace();
             System.exit(e.hashCode());
@@ -72,8 +103,7 @@ public class Git extends VersionControlSystem {
 
         List<ProjectFile> output = new ArrayList<>();
 
-        List<String> gitCommands = Arrays.asList("git", "ls-tree", "--name-only", "-r", commitGUID);
-        BufferedReader gitOutputReader = executeGitApplication(gitCommands);
+        BufferedReader gitOutputReader = executeExternalApplication("git", "ls-tree", "--name-only", "-r", commitGUID);
 
         try {
 
@@ -83,6 +113,8 @@ public class Git extends VersionControlSystem {
 
                 output.add(projectFile);
             }
+
+            gitOutputReader.close();
 
         } catch (IOException e) {
 
@@ -94,12 +126,11 @@ public class Git extends VersionControlSystem {
     }
 
     @Override
-    public AbstractMap<LocalDateTime, Commit> getAllCommits() {
+    public AbstractMap<LocalDate, Commit> getAllCommits() {
 
-        AbstractMap<LocalDateTime, Commit> output = new TreeMap<>();
+        AbstractMap<LocalDate, Commit> output = new TreeMap<>();
 
-        List<String> gitCommands = Arrays.asList("git", "log", "--date=iso-strict", "--pretty=format:\"%H<->%cd\"");
-        BufferedReader gitOutputReader = executeGitApplication(gitCommands);
+        BufferedReader gitOutputReader = executeExternalApplication("git", "log", "--date=iso-strict", "--pretty=format:\"%H<->%cd\"");
 
         try {
 
@@ -109,11 +140,13 @@ public class Git extends VersionControlSystem {
                 String[] commitInfo = currentOutputLine.split("<->");
 
                 commit.guid = commitInfo[0];
-                commit.date = LocalDate.parse(commitInfo[1], DateTimeFormatter.ISO_OFFSET_DATE_TIME).atStartOfDay();
+                commit.date = LocalDate.parse(commitInfo[1], DateTimeFormatter.ISO_OFFSET_DATE_TIME);
 
                 if (!output.containsKey(commit.date))
                     output.put(commit.date, commit);
             }
+
+            gitOutputReader.close();
 
         } catch (Exception e) {
 
@@ -124,33 +157,22 @@ public class Git extends VersionControlSystem {
         return output;
     }
 
-    public List<String> getAuthorsOfFile(String filename) {
+    public int getNumberOfAuthorsOfFile(String filename, LocalDate dateLowerBound, LocalDate dateUpperBound) {
 
-        ArrayList<String> output = new ArrayList<>();
+        int output = 0;
+        BufferedReader gitOutputReader;
 
-        List<String> gitCommands = Arrays.asList("git", "log", "--pretty=format:\"%an\"", filename);
-        BufferedReader gitOutputReader = executeGitApplication(gitCommands);
+        if (dateUpperBound != null)
+            gitOutputReader = executeExternalApplication("git", "shortlog", "--summary", "--after=", dateLowerBound.toString(), "--before=", dateUpperBound.toString(), filename);
+        else
+            gitOutputReader = executeExternalApplication("git", "shortlog", "--summary", "--after=", dateLowerBound.toString(), filename);
 
         try {
 
+            for (String currentOutputLine = gitOutputReader.readLine(); currentOutputLine != null; currentOutputLine = gitOutputReader.readLine())
+                output++;
 
-            for (String currentOutputLine = gitOutputReader.readLine(); currentOutputLine != null; currentOutputLine = gitOutputReader.readLine()) {
-
-                boolean authorAlreadyExist = false;
-                String lowerCaseCurrentLine = currentOutputLine.toLowerCase();
-
-                for (String author : output) {
-                    if (author.contains(lowerCaseCurrentLine)) {
-                        authorAlreadyExist = true;
-                        break;
-                    }
-                }
-
-                if (authorAlreadyExist == false) {
-                    output.add(lowerCaseCurrentLine);
-                }
-            }
-
+            gitOutputReader.close();
 
         } catch (Exception e) {
 

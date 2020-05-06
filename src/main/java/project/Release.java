@@ -1,13 +1,16 @@
 package project;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 public class Release {
 
     public int id;
     public String name;
-    public LocalDateTime releaseDate;
+
+    public LocalDate releaseDate;
+    public LocalDate endOfLifeDate;
+
     public List<ProjectFile> files;
 
     @Override

@@ -58,7 +58,7 @@ public class ProjectDatasetExporter {
             FileWriter fw = new FileWriter(outputFileDirectory);
             CSVPrinter printer = new CSVPrinter(fw, CSVFormat.DEFAULT);
 
-            printer.printRecord("Version ID", "File Name");
+            printer.printRecord("Version ID", "File Name", "Number Of Authors");
 
             int currentReleaseIndex = 1;
             for (Map.Entry<LocalDateTime, Release> releaseEntry : this.project.releases.entrySet()) {
@@ -66,7 +66,7 @@ public class ProjectDatasetExporter {
                 Release currentRelease = releaseEntry.getValue();
 
                 for (ProjectFile currentProjectFile : currentRelease.files)
-                    printer.printRecord(currentReleaseIndex, currentProjectFile.name);
+                    printer.printRecord(currentReleaseIndex, currentProjectFile.name, currentProjectFile.numberOfAuthors);
 
                 currentReleaseIndex++;
             }

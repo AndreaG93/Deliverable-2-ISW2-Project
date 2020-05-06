@@ -7,7 +7,6 @@ import project.Release;
 
 import java.lang.reflect.Field;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.AbstractMap;
 import java.util.TreeMap;
 import java.util.logging.Logger;
@@ -17,9 +16,9 @@ public class ProjectReleases {
     public static final Logger logger = Logger.getLogger(ProjectReleases.class.getName());
     private static final String[] releaseProperties = {"releaseDate", "name", "id"};
 
-    public static AbstractMap<LocalDateTime, Release> downloadMetadata(String projectName) {
+    public static AbstractMap<LocalDate, Release> downloadMetadata(String projectName) {
 
-        AbstractMap<LocalDateTime, Release> output = new TreeMap<>();
+        AbstractMap<LocalDate, Release> output = new TreeMap<>();
 
         String url = "https://issues.apache.org/jira/rest/api/2/project/" + projectName;
 
@@ -42,7 +41,7 @@ public class ProjectReleases {
                         Field field = Release.class.getField(releaseProperty);
 
                         if (field.getType().getName().equals("java.time.LocalDateTime"))
-                            field.set(currentRelease, LocalDate.parse(propertyValue).atStartOfDay());
+                            field.set(currentRelease, LocalDate.parse(propertyValue));
                         else if (field.getType().getName().equals("int"))
                             field.set(currentRelease, Integer.parseInt(propertyValue));
                         else
