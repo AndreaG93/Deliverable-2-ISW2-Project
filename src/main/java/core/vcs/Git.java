@@ -18,7 +18,7 @@ public class Git extends VersionControlSystem {
 
     private static String readErrors(Process p) throws IOException {
         StringBuilder bld = new StringBuilder();
-        String line = "";
+        String line;
         BufferedReader stdError = new BufferedReader(new InputStreamReader(p.getErrorStream()));
         while ((line = stdError.readLine()) != null)
             bld.append(line);
@@ -169,23 +169,28 @@ public class Git extends VersionControlSystem {
 
         for (int index = gitOutput.size() - 1; index >= 0; ) {
 
+            long insertions = 0;
+            long deletions = 0;
+
             String[] outputContainingInsertionAndDeletion = gitOutput.get(index).split("\\s+");
             String[] outputContainingModifications = gitOutput.get(index - 1).split("\\s+");
 
             int modificationFlagsIndex = outputContainingModifications.length - 1;
 
-            modifiedCodeLines += Long.parseLong(outputContainingModifications[modificationFlagsIndex - 1]);
-
             if (outputContainingModifications[modificationFlagsIndex].contains("-") && outputContainingModifications[modificationFlagsIndex].contains("+")) {
 
-                addedCodeLines += Long.parseLong(outputContainingInsertionAndDeletion[4]);
-                removedCodeLines += Long.parseLong(outputContainingInsertionAndDeletion[6]);
+                insertions = Long.parseLong(outputContainingInsertionAndDeletion[4]);
+                deletions = Long.parseLong(outputContainingInsertionAndDeletion[6]);
 
             } else if (outputContainingModifications[modificationFlagsIndex].contains("-"))
-                removedCodeLines += Long.parseLong(outputContainingInsertionAndDeletion[4]);
+                deletions = Long.parseLong(outputContainingInsertionAndDeletion[4]);
 
-            else
-                addedCodeLines += Long.parseLong(outputContainingInsertionAndDeletion[4]);
+            else if (outputContainingModifications[modificationFlagsIndex].contains("+"))
+                insertions = Long.parseLong(outputContainingInsertionAndDeletion[4]);
+
+            modifiedCodeLines += (insertions + deletions);
+            addedCodeLines += insertions;
+            removedCodeLines += deletions;
 
             index -= 4;
             output.numberOfRevisions++;
