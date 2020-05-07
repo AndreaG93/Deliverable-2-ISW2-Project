@@ -29,6 +29,35 @@ public class Git extends VersionControlSystem {
 
         List<String> output = new ArrayList<>();
 
+        ProcessBuilder processBuilder = new ProcessBuilder(commands);
+        processBuilder.directory(rootDirectory);
+
+        try {
+
+            Process process = processBuilder.start();
+
+            if (process.waitFor() != 0)
+                this.logger.severe(readErrors(process));
+
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+
+            String currentLine;
+            while ((currentLine = bufferedReader.readLine()) != null)
+                output.add(currentLine);
+
+            bufferedReader.close();
+            process.destroy();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return output;
+    }
+
+    private List<String> executeExternalApplicationRedirectingOutput(File rootDirectory, String... commands) {
+
+        List<String> output = new ArrayList<>();
 
         ProcessBuilder processBuilder = new ProcessBuilder(commands);
         processBuilder.directory(rootDirectory);
@@ -36,50 +65,23 @@ public class Git extends VersionControlSystem {
         try {
 
             File tempFile = File.createTempFile("hello", ".tmp");
-            File errorTempFile = File.createTempFile("error", ".tmp");
 
-            processBuilder.redirectError(errorTempFile);
             processBuilder.redirectOutput(tempFile);
-
             Process process = processBuilder.start();
 
             if (process.waitFor() != 0)
                 this.logger.severe(readErrors(process));
 
-            FileReader fr = new FileReader(tempFile);   //reads the file
-            BufferedReader br = new BufferedReader(fr);
-
+            BufferedReader bufferedReader = new BufferedReader(new FileReader(tempFile));
 
             String currentLine;
-            while ((currentLine = br.readLine()) != null) {
+            while ((currentLine = bufferedReader.readLine()) != null)
                 output.add(currentLine);
-            }
 
-            br.close();
-            fr.close();
-
-
+            bufferedReader.close();
             process.destroy();
 
-            /*
-
-            InputStreamReader inputStreamReader = new InputStreamReader(process.getInputStream());
-            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-
-            for (String currentLine = bufferedReader.readLine(); currentLine != null; currentLine = bufferedReader.readLine())
-                output.add(currentLine);
-
-            process.getInputStream().close();
-            inputStreamReader.close();
-            bufferedReader.close();
-
-*/
-
-
             if (!tempFile.delete())
-                this.logger.severe(readErrors(process));
-
-            if (!errorTempFile.delete())
                 this.logger.severe(readErrors(process));
 
         } catch (Exception e) {
@@ -122,10 +124,10 @@ public class Git extends VersionControlSystem {
     }
 
     @Override
-    public List<ProjectFile> getFiles(String commitHash) {
+    public List<ProjectFile> getFiles(String commitHash, String revisionHash) {
 
         List<ProjectFile> output = new ArrayList<>();
-        List<String> gitOutput = executeExternalApplication(this.repositoryLocalDirectory, "git", "ls-files");
+        List<String> gitOutput = executeExternalApplicationRedirectingOutput(this.repositoryLocalDirectory, "git", "ls-tree", "-r", "--name-only", revisionHash);
 
         for (String currentOutputString : gitOutput) {
 
@@ -139,9 +141,9 @@ public class Git extends VersionControlSystem {
     }
 
     @Override
-    public double getFileWeekAge(String filename, LocalDateTime releaseDate) {
+    public double getFileWeekAge(String filename, LocalDateTime releaseDate, String revisionHash) {
 
-        List<String> gitOutput = executeExternalApplication(this.repositoryLocalDirectory, "git", "log", "--reverse", "--max-count=1", "--date=iso-strict", "--pretty=format:\"%cd\"", filename);
+        List<String> gitOutput = executeExternalApplication(this.repositoryLocalDirectory, "git", "log", revisionHash, "--reverse", "--max-count=1", "--date=iso-strict", "--pretty=format:\"%cd\"", "--", filename);
 
         LocalDateTime creationDate = LocalDateTime.parse(gitOutput.get(0), DateTimeFormatter.ISO_OFFSET_DATE_TIME);
 
@@ -149,16 +151,58 @@ public class Git extends VersionControlSystem {
     }
 
     @Override
-    public int getNumberOfAuthorsOfFile(String filename) {
+    public int getNumberOfAuthorsOfFile(String filename, String revisionHash) {
 
-        List<String> gitOutput = executeExternalApplication(this.repositoryLocalDirectory, "git", "shortlog", "-s", filename);
+        List<String> gitOutput = executeExternalApplication(this.repositoryLocalDirectory, "git", "shortlog", revisionHash, "-s", "--", filename);
 
         return gitOutput.size();
     }
 
+    public FileMetric getFileLOCTouched(String filename, String revisionHash) {
+
+        FileMetric output = new FileMetric();
+        List<String> gitOutput = executeExternalApplicationRedirectingOutput(this.repositoryLocalDirectory, "git", "log", "--follow", "--pretty=format:'%H<->%cd'", "--stat", revisionHash, "--", filename);
+
+        long addedCodeLines = 0;
+        long removedCodeLines = 0;
+        long modifiedCodeLines = 0;
+
+        for (int index = gitOutput.size() - 1; index >= 0; ) {
+
+            String[] outputContainingInsertionAndDeletion = gitOutput.get(index).split("\\s+");
+            String[] outputContainingModifications = gitOutput.get(index - 1).split("\\s+");
+
+            int modificationFlagsIndex = outputContainingModifications.length - 1;
+
+            modifiedCodeLines += Long.parseLong(outputContainingModifications[modificationFlagsIndex - 1]);
+
+            if (outputContainingModifications[modificationFlagsIndex].contains("-") && outputContainingModifications[modificationFlagsIndex].contains("+")) {
+
+                addedCodeLines += Long.parseLong(outputContainingInsertionAndDeletion[4]);
+                removedCodeLines += Long.parseLong(outputContainingInsertionAndDeletion[6]);
+
+            } else if (outputContainingModifications[modificationFlagsIndex].contains("-"))
+                removedCodeLines += Long.parseLong(outputContainingInsertionAndDeletion[4]);
+
+            else
+                addedCodeLines += Long.parseLong(outputContainingInsertionAndDeletion[4]);
+
+            index -= 4;
+            output.numberOfRevisions++;
+        }
+
+        output.churn = addedCodeLines - removedCodeLines;
+        output.LOCTouched = addedCodeLines + removedCodeLines + modifiedCodeLines;
+
+        return output;
+    }
+
+
+    // git log --follow --pretty=format:'%H<->%cd' --stat f83cfe160abf1ac66312312cb3a7065b49adce47 -- pom.xml   GIUSTO GIUSTO GIUSTO
+
     @Override
     public long getFileLOC(String filename) {
-
+        // TODO NOT WORK
         List<String> queryOutput = executeExternalApplication(this.repositoryLocalDirectory, "wsl", "cloc", "--quiet", filename);
 
         String[] output = queryOutput.get(3).split("\\s+");
@@ -198,7 +242,69 @@ public class Git extends VersionControlSystem {
 
     // git log --reverse --max-count=1 --date=iso-strict --pretty=format:"%cd" pom.xml
 
+// 2015-07-14T08:21:14-04:00
+//
+//  git log -p --pretty=format:"%H<->%cd" -- pom.xml
 
-    // 5a381391031c2756bf0927f4246e20e220306f8d  TAG
-    // bce3e8bd54cb7b7f27a2cfe11a4878d5bbcb473e
+
+    //  git log --follow --format='%H' --stat -- pom.xml
 }
+
+/*
+ pom.xml | 193 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+         1 file changed, 193 insertions(+)
+         671109ba2bbb3bf81f0d75d9243dc2f9ed4fa375
+         50b9f3b22ed598fadd1e5b43590f3985507083b1
+
+git diff --stat 671109ba2bbb3bf81f0d75d9243dc2f9ed4fa375 50b9f3b22ed598fadd1e5b43590f3985507083b1 -- pom.xml
+*/
+
+
+
+
+
+
+/*
+         pom.xml | 11 ++++++-----
+         1 file changed, 6 insertions(+), 5 deletions(-)
+         ce5c4e8094a620c999ffe7f26f00cc6bece4cf37
+
+         pom.xml | 37 ++++++++++++++++++++++++++++++++-----
+         1 file changed, 32 insertions(+), 5 deletions(-)
+         4cd53677c05d0b7d02b027bf445eb302843d3327
+
+         git diff --stat 722df7ee79166fd99131b178d063be64825b30a8 -- pom.xml
+
+         pom.xml | 2 +-
+         1 file changed, 1 insertion(+), 1 deletion(-)
+         722df7ee79166fd99131b178d063be64825b30a8
+
+
+
+            git ls-tree pom.xml
+         git cat-file -p 0670cdeb266c4d23f2549d416161689ff7a6e223
+
+*/
+
+
+/*
+
+git cat-file -p 0670cdeb266c4d23f2549d416161689ff7a6e223 | wc
+   1607    2152   84485
+
+
+ */
+
+// FOR LOC git cat-file -p <hashfileofrevision> | wc
+
+// git log --follow --format='%H' --stat -- pom.xml
+
+// git log --reverse --follow --stat -p pom.xml
+
+
+// git checkout 6554ac251fad41c0981976a7b942ad48c592741e
+// git log --follow --format='%H<->%cd' --stat -- pom.xml
+//  git log --follow --format='%H<->%cd' --stat e15287f110a32909c2f5e32d9c69dea39bb0f562...f83cfe160abf1ac66312312cb3a7065b49adce47 -- pom.xml
+
+
+// git log --follow --format='%H<->%cd' --stat f83cfe160abf1ac66312312cb3a7065b49adce47 -- pom.xml   GIUSTO GIUSTO GIUSTO

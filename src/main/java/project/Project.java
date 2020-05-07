@@ -1,11 +1,14 @@
 package project;
 
 import core.ProjectReleases;
+import core.vcs.FileMetric;
 import core.vcs.Git;
 import core.vcs.VersionControlSystem;
 
 import java.time.LocalDate;
 import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class Project {
@@ -32,15 +35,49 @@ public class Project {
 
             Commit releaseCommit = this.versionControlSystem.getReleaseCommit(currentRelease.releaseDate);
 
-            this.versionControlSystem.changeLocalRepositoryStateToCommit(releaseCommit.hash);
+            currentRelease.files = this.versionControlSystem.getFiles(releaseCommit.hash, releaseCommit.hash);
 
-            currentRelease.files = this.versionControlSystem.getFiles(releaseCommit.hash);
+            List<Thread> threadList = new ArrayList<>();
 
-            for (ProjectFile projectFile : currentRelease.files) {
+            //this.versionControlSystem.changeLocalRepositoryStateToCommit(releaseCommit.hash);
 
-                projectFile.numberOfAuthors = this.versionControlSystem.getNumberOfAuthorsOfFile(projectFile.name);
-                projectFile.weekAge = this.versionControlSystem.getFileWeekAge(projectFile.name, releaseCommit.date);
-                projectFile.LOC = this.versionControlSystem.getFileLOC(projectFile.name);
+            threadList.add(new Thread(() -> {
+                for (ProjectFile projectFile : currentRelease.files)
+                    projectFile.numberOfAuthors = versionControlSystem.getNumberOfAuthorsOfFile(projectFile.name, releaseCommit.hash);
+            }));
+
+            threadList.add(new Thread(() -> {
+                for (ProjectFile projectFile : currentRelease.files)
+                    projectFile.ageInWeeks = versionControlSystem.getFileWeekAge(projectFile.name, releaseCommit.date, releaseCommit.hash);
+            }));
+
+            threadList.add(new Thread(() -> {
+
+                for (ProjectFile projectFile : currentRelease.files) {
+
+                    FileMetric fileMetrics = versionControlSystem.getFileLOCTouched(projectFile.name, releaseCommit.hash);
+
+                    projectFile.LOCTouched = fileMetrics.LOCTouched;
+                    projectFile.churn = fileMetrics.churn;
+                    projectFile.numberOfRevisions = fileMetrics.numberOfRevisions;
+                }
+            }));
+
+            threadList.add(new Thread(() -> {
+                for (ProjectFile projectFile : currentRelease.files)
+                    projectFile.LOC = 0;
+            }));
+
+            for (Thread currentThread : threadList)
+                currentThread.start();
+
+            try {
+
+                for (Thread currentThread : threadList)
+                    currentThread.join();
+
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
 
             break;

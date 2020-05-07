@@ -14,7 +14,6 @@ public abstract class VersionControlSystem {
     protected final String repositoryURL;
     protected File repositoryLocalDirectory;
 
-
     public VersionControlSystem(String repositoryURL, String repositoryLocalDirectory) {
 
         this.logger = Logger.getLogger(VersionControlSystem.class.getName());
@@ -27,13 +26,15 @@ public abstract class VersionControlSystem {
 
     public abstract void changeLocalRepositoryStateToCommit(String commitHash);
 
-    public abstract double getFileWeekAge(String filename, LocalDateTime releaseDate);
+    public abstract double getFileWeekAge(String filename, LocalDateTime releaseDate, String revisionHash);
 
-    public abstract int getNumberOfAuthorsOfFile(String filename);
+    public abstract int getNumberOfAuthorsOfFile(String filename, String revisionHash);
+
+    public abstract FileMetric getFileLOCTouched(String filename, String revisionHash);
 
     public abstract long getFileLOC(String filename);
 
     public abstract Commit getReleaseCommit(LocalDateTime releaseDate);
 
-    public abstract List<ProjectFile> getFiles(String commitHash);
+    public abstract List<ProjectFile> getFiles(String commitHash, String revisionHash);
 }

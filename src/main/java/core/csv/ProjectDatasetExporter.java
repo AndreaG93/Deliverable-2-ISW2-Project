@@ -8,6 +8,7 @@ import project.Release;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.logging.Logger;
 
 public class ProjectDatasetExporter {
@@ -56,13 +57,25 @@ public class ProjectDatasetExporter {
             FileWriter fw = new FileWriter(outputFileDirectory);
             CSVPrinter printer = new CSVPrinter(fw, CSVFormat.DEFAULT);
 
-            printer.printRecord("Version ID", "File Name", "Number Of Authors", "Age in Weeks", "LOC");
+            Field[] projectFileFields = ProjectFile.class.getFields();
+
+            printer.print("VersionID");
+            for (Field field : projectFileFields)
+                printer.print(field.getName());
+            printer.println();
 
             int currentReleaseIndex = 1;
             for (Release currentRelease : this.project.releases) {
 
-                for (ProjectFile currentProjectFile : currentRelease.files)
-                    printer.printRecord(currentReleaseIndex, currentProjectFile.name, currentProjectFile.numberOfAuthors, currentProjectFile.weekAge, currentProjectFile.LOC);
+                for (ProjectFile currentProjectFile : currentRelease.files) {
+
+                    printer.print(currentReleaseIndex);
+
+                    for (Field field : projectFileFields)
+                        printer.print(field.get(currentProjectFile));
+
+                    printer.println();
+                }
 
                 break;
             }
@@ -70,7 +83,7 @@ public class ProjectDatasetExporter {
             printer.close();
             fw.close();
 
-        } catch (IOException e) {
+        } catch (IOException | IllegalAccessException e) {
 
             this.logger.severe(e.getMessage());
             System.exit(e.hashCode());
