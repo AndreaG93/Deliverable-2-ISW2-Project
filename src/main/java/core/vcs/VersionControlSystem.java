@@ -19,4 +19,6 @@ public interface VersionControlSystem {
     long getFileLOC(String filename);
 
     Commit getCommit(LocalDateTime releaseDate);
+
+    FileChangeSetSizeMetric getChangeSetSizeMetric(String filename, String commitHash);
 }

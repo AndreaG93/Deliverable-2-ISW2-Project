@@ -1,6 +1,6 @@
 package project;
 
-import core.vcs.FileMetric;
+import core.vcs.FileChangeSetSizeMetric;
 import core.vcs.VersionControlSystem;
 import core.vcs.git.Git;
 import project.entities.Commit;
@@ -26,14 +26,22 @@ public class ProjectDatasetBuilderThread implements Runnable {
 
         for (ProjectFile projectFile : this.projectFileList) {
 
-            FileMetric fileMetrics = versionControlSystem.getFileMetrics(projectFile.name, releaseCommit.hash);
+            FileChangeSetSizeMetric metricSet1 = this.versionControlSystem.getChangeSetSizeMetric(projectFile.name, releaseCommit.hash);
+
+            //FileMetric fileMetrics = versionControlSystem.getFileMetrics(projectFile.name, releaseCommit.hash);
 
             projectFile.LOC = 0;
+            /*
             projectFile.LOCTouched = fileMetrics.LOCTouched;
             projectFile.numberOfRevisions = fileMetrics.numberOfRevisions;
             projectFile.churn = fileMetrics.churn;
             projectFile.numberOfAuthors = versionControlSystem.getNumberOfAuthorsOfFile(projectFile.name, releaseCommit.hash);
             projectFile.ageInWeeks = versionControlSystem.getFileAgeInWeeks(projectFile.name, releaseCommit.date, releaseCommit.hash);
+             */
+
+            projectFile.changeSetSize = metricSet1.changeSetSize;
+            projectFile.maxChangeSetSize = metricSet1.maxChangeSetSize;
+            projectFile.averageChangeSetSize = metricSet1.averageChangeSetSize;
         }
     }
 }

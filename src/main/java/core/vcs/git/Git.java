@@ -1,5 +1,6 @@
 package core.vcs.git;
 
+import core.vcs.FileChangeSetSizeMetric;
 import core.vcs.FileMetric;
 import core.vcs.VersionControlSystem;
 import project.entities.Commit;
@@ -73,6 +74,40 @@ public class Git implements VersionControlSystem {
         return gitOutputReader.output;
     }
 
+    private long getChangeSetSize(String commitHash) {
+
+        ExternalApplicationOutputLinesCounter gitOutputReader = new ExternalApplicationOutputLinesCounter();
+
+        this.gitApplication.executeWithOutputRedirection(gitOutputReader, "diff-tree", "--no-commit-id", "--name-only", "-r", commitHash);
+
+        return gitOutputReader.output - 1;
+    }
+    
+    @Override
+    public FileChangeSetSizeMetric getChangeSetSizeMetric(String filename, String commitHash) {
+
+        FileChangeSetSizeMetric output = new FileChangeSetSizeMetric();
+
+        ExternalApplicationOutputListMaker gitOutputReader = new ExternalApplicationOutputListMaker();
+        this.gitApplication.executeWithOutputRedirection(gitOutputReader, "log", "--follow", "--format=%H", commitHash, "--", filename);
+
+        for (String outputCommitHash : gitOutputReader.output) {
+
+            long currentChangeSetSize = getChangeSetSize(outputCommitHash);
+
+            if (outputCommitHash.equals(commitHash))
+                output.changeSetSize = currentChangeSetSize;
+
+            if (output.maxChangeSetSize < currentChangeSetSize)
+                output.maxChangeSetSize = currentChangeSetSize;
+
+            output.averageChangeSetSize += currentChangeSetSize;
+        }
+
+        output.averageChangeSetSize = output.averageChangeSetSize / gitOutputReader.output.size();
+
+        return output;
+    }
 
     @Override
     public FileMetric getFileMetrics(String filename, String revisionHash) {
@@ -221,3 +256,5 @@ git cat-file -p 0670cdeb266c4d23f2549d416161689ff7a6e223 | wc
 // git log --follow --format='%H<->%cd' --stat f83cfe160abf1ac66312312cb3a7065b49adce47 -- pom.xml   GIUSTO GIUSTO GIUSTO
 
 
+//  git log --follow --format='%H<->%cd' f83cfe160abf1ac66312312cb3a7065b49adce47 -- pom.xml
+// git diff-tree --no-commit-id --name-only -r f83cfe160abf1ac66312312cb3a7065b49adce47

@@ -9,6 +9,10 @@ public class ProjectFile {
     public long numberOfAuthors;
     public long numberOfRevisions;
 
+    public long changeSetSize;
+    public long maxChangeSetSize;
+    public double averageChangeSetSize;
+
     public long churn;
     public double ageInWeeks;
 
