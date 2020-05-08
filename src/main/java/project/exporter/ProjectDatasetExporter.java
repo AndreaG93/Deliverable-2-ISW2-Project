@@ -1,10 +1,10 @@
-package core.csv;
+package project.exporter;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import project.Project;
-import project.ProjectFile;
-import project.Release;
+import project.entities.ProjectFile;
+import project.entities.ProjectRelease;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -13,17 +13,7 @@ import java.util.logging.Logger;
 
 public class ProjectDatasetExporter {
 
-    private final Logger logger;
-    private final Project project;
-
-
-    public ProjectDatasetExporter(Project project) {
-        this.project = project;
-        this.logger = Logger.getLogger(ProjectDatasetExporter.class.getName());
-    }
-
-
-    public void exportReleaseInfo() {
+    public static void exportReleaseInfo(Project project) {
         try {
 
             FileWriter fw = new FileWriter("./ReleaseInfo");
@@ -32,11 +22,11 @@ public class ProjectDatasetExporter {
             printer.printRecord("Index", "Version ID", "Version Name", "Release Date");
 
 
-            for (int i = 1; i < this.project.releases.length; i++) {
+            for (int i = 1; i < project.projectReleases.length; i++) {
 
-                Release currentRelease = this.project.releases[i];
+                ProjectRelease currentProjectRelease = project.projectReleases[i];
 
-                printer.printRecord(i, currentRelease.id, currentRelease.name, currentRelease.releaseDate);
+                printer.printRecord(i, currentProjectRelease.id, currentProjectRelease.name, currentProjectRelease.releaseDate);
             }
 
 
@@ -45,12 +35,12 @@ public class ProjectDatasetExporter {
 
         } catch (IOException e) {
 
-            this.logger.severe(e.getMessage());
+            Logger.getLogger(ProjectDatasetExporter.class.getName()).severe(e.getMessage());
             System.exit(e.hashCode());
         }
     }
 
-    public void exportTo(String outputFileDirectory) {
+    public static void exportTo(Project project, String outputFileDirectory) {
 
         try {
 
@@ -65,9 +55,9 @@ public class ProjectDatasetExporter {
             printer.println();
 
             int currentReleaseIndex = 1;
-            for (Release currentRelease : this.project.releases) {
+            for (ProjectRelease currentProjectRelease : project.projectReleases) {
 
-                for (ProjectFile currentProjectFile : currentRelease.files) {
+                for (ProjectFile currentProjectFile : currentProjectRelease.files) {
 
                     printer.print(currentReleaseIndex);
 
@@ -85,7 +75,7 @@ public class ProjectDatasetExporter {
 
         } catch (IOException | IllegalAccessException e) {
 
-            this.logger.severe(e.getMessage());
+            Logger.getLogger(ProjectDatasetExporter.class.getName()).severe(e.getMessage());
             System.exit(e.hashCode());
         }
     }

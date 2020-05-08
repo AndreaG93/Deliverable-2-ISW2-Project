@@ -1,4 +1,4 @@
-package project;
+package project.entities;
 
 public class Issue {
 

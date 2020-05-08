@@ -1,12 +1,16 @@
 package project;
 
 import core.ApplicationEntryPoint;
-import core.ProjectReleases;
-import core.vcs.Git;
+import core.its.IssueTrackingSystem;
+import core.its.jira.JIRA;
 import core.vcs.VersionControlSystem;
+import core.vcs.git.Git;
+import project.entities.Commit;
+import project.entities.ProjectFile;
+import project.entities.ProjectRelease;
+import project.exporter.ProjectDatasetExporter;
+import utilis.common.ListManagement;
 
-import java.time.LocalDate;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -14,60 +18,44 @@ import java.util.logging.Logger;
 
 public class Project {
 
+    private static final String rootProjectDirectory = "C://";
     public final String name;
-    private final VersionControlSystem versionControlSystem;
+
+    private final VersionControlSystem git;
+    private final IssueTrackingSystem jira;
+
+    public ProjectRelease[] projectReleases;
     private final Logger logger;
 
-    public Release[] releases;
-
-    public AbstractMap<LocalDate, Commit> commits;
-
     public Project(String name, String repositoryURL) {
+
         this.name = name;
-        this.versionControlSystem = new Git(repositoryURL, "C://" + name);
+
+        this.git = new Git(rootProjectDirectory, repositoryURL, rootProjectDirectory + name);
+        this.jira = new JIRA();
 
         this.logger = Logger.getLogger(ApplicationEntryPoint.class.getName());
     }
 
-    public static <T> List<List<T>> chunks(List<T> input, int n) {
+    public void getDataFromIssueTrackingSystem() {
 
-        List<List<T>> chunks = new ArrayList<>();
-
-        int lowerBound = 0;
-        int upperBound;
-
-        do {
-            upperBound = Math.min(input.size(), lowerBound + n);
-
-            List<T> chunk = input.subList(lowerBound, upperBound);
-            chunks.add(chunk);
-
-            lowerBound += n;
-
-        } while (lowerBound != input.size());
-
-
-        return chunks;
+        this.projectReleases = this.jira.getProjectReleases(this.name);
     }
 
-    public void buildDataset() {
+    public void getDataFromVersionControlSystem() {
 
-        versionControlSystem.cloneRepositoryLocally();
+        for (ProjectRelease currentProjectRelease : this.projectReleases) {
 
-        this.releases = ProjectReleases.downloadMetadata(this.name);
+            Commit releaseCommit = this.git.getCommit(currentProjectRelease.releaseDate);
 
-        for (Release currentRelease : this.releases) {
+            currentProjectRelease.files = this.git.getFiles(releaseCommit.hash, releaseCommit.hash);
 
-            Commit releaseCommit = this.versionControlSystem.getReleaseCommit(currentRelease.releaseDate);
-
-            currentRelease.files = this.versionControlSystem.getFiles(releaseCommit.hash, releaseCommit.hash);
-
-            List<List<ProjectFile>> portions = chunks(currentRelease.files, currentRelease.files.size() / 4);
+            List<List<ProjectFile>> portions = ListManagement.divideInChunks(currentProjectRelease.files, currentProjectRelease.files.size() / 4);
             List<Thread> threadList = new ArrayList<>();
 
             for (List<ProjectFile> subList : portions) {
 
-                Runnable runnable = new DatasetBuilderThread(subList, versionControlSystem, releaseCommit);
+                Runnable runnable = new ProjectDatasetBuilderThread(subList, releaseCommit, rootProjectDirectory + name);
                 Thread thread = new Thread(runnable);
 
                 thread.start();
@@ -87,5 +75,11 @@ public class Project {
 
             break;
         }
+    }
+
+    public void exportCollectedDataset(String outputFileName) {
+
+        ProjectDatasetExporter.exportReleaseInfo(this);
+        ProjectDatasetExporter.exportTo(this, outputFileName);
     }
 }

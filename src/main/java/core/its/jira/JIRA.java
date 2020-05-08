@@ -1,9 +1,10 @@
-package core;
+package core.its.jira;
 
-import core.utils.JSONManagement;
+import core.its.IssueTrackingSystem;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import project.Release;
+import project.entities.ProjectRelease;
+import utilis.common.JSONManagement;
 
 import java.lang.reflect.Field;
 import java.time.LocalDate;
@@ -12,16 +13,24 @@ import java.util.AbstractMap;
 import java.util.TreeMap;
 import java.util.logging.Logger;
 
-public class ProjectReleases {
+public class JIRA implements IssueTrackingSystem {
 
-    public static final Logger logger = Logger.getLogger(ProjectReleases.class.getName());
     private static final String[] releaseProperties = {"releaseDate", "name", "id"};
+    private static final String jiraURL = "https://issues.apache.org/jira/rest/api/2/project/";
 
-    public static Release[] downloadMetadata(String projectName) {
+    private final Logger logger;
 
-        AbstractMap<LocalDateTime, Release> output = new TreeMap<>();
+    public JIRA() {
 
-        String url = "https://issues.apache.org/jira/rest/api/2/project/" + projectName;
+        this.logger = Logger.getLogger(JIRA.class.getName());
+    }
+
+    @Override
+    public ProjectRelease[] getProjectReleases(String projectName) {
+
+        AbstractMap<LocalDateTime, ProjectRelease> output = new TreeMap<>();
+
+        String url = jiraURL + projectName;
 
         JSONObject json = JSONManagement.readJsonFromUrl(url);
         JSONArray projectVersions = json.getJSONArray("versions");
@@ -29,7 +38,7 @@ public class ProjectReleases {
         for (int i = 0; i < projectVersions.length(); i++) {
 
             boolean isCurrentReleaseDiscarded = false;
-            Release currentRelease = new Release();
+            ProjectRelease currentProjectRelease = new ProjectRelease();
 
             for (String releaseProperty : releaseProperties) {
 
@@ -39,14 +48,14 @@ public class ProjectReleases {
 
                     try {
 
-                        Field field = Release.class.getField(releaseProperty);
+                        Field field = ProjectRelease.class.getField(releaseProperty);
 
                         if (field.getType().getName().equals("java.time.LocalDateTime"))
-                            field.set(currentRelease, LocalDate.parse(propertyValue).atStartOfDay().plusHours(23).plusMinutes(59).plusSeconds(59));
+                            field.set(currentProjectRelease, LocalDate.parse(propertyValue).atStartOfDay().plusHours(23).plusMinutes(59).plusSeconds(59));
                         else if (field.getType().getName().equals("int"))
-                            field.set(currentRelease, Integer.parseInt(propertyValue));
+                            field.set(currentProjectRelease, Integer.parseInt(propertyValue));
                         else
-                            field.set(currentRelease, propertyValue);
+                            field.set(currentProjectRelease, propertyValue);
 
                     } catch (Exception e) {
 
@@ -62,10 +71,10 @@ public class ProjectReleases {
             }
 
             if (!isCurrentReleaseDiscarded) {
-                output.put(currentRelease.releaseDate, currentRelease);
+                output.put(currentProjectRelease.releaseDate, currentProjectRelease);
             }
         }
 
-        return output.values().toArray(new Release[0]);
+        return output.values().toArray(new ProjectRelease[0]);
     }
 }

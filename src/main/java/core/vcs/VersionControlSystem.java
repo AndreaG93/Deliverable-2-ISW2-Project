@@ -1,40 +1,22 @@
 package core.vcs;
 
-import project.Commit;
-import project.ProjectFile;
+import project.entities.Commit;
+import project.entities.ProjectFile;
 
-import java.io.File;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.logging.Logger;
 
-public abstract class VersionControlSystem {
+public interface VersionControlSystem {
 
-    protected final Logger logger;
-    protected final String repositoryURL;
-    protected File repositoryLocalDirectory;
+    List<ProjectFile> getFiles(String commitHash, String revisionHash);
 
-    public VersionControlSystem(String repositoryURL, String repositoryLocalDirectory) {
+    double getFileAgeInWeeks(String filename, LocalDateTime releaseDate, String revisionHash);
 
-        this.logger = Logger.getLogger(VersionControlSystem.class.getName());
+    int getNumberOfAuthorsOfFile(String filename, String revisionHash);
 
-        this.repositoryURL = repositoryURL;
-        this.repositoryLocalDirectory = new File(repositoryLocalDirectory);
-    }
+    FileMetric getFileMetrics(String filename, String revisionHash);
 
-    public abstract void cloneRepositoryLocally();
+    long getFileLOC(String filename);
 
-    public abstract void changeLocalRepositoryStateToCommit(String commitHash);
-
-    public abstract double getFileWeekAge(String filename, LocalDateTime releaseDate, String revisionHash);
-
-    public abstract int getNumberOfAuthorsOfFile(String filename, String revisionHash);
-
-    public abstract FileMetric getFileLOCTouched(String filename, String revisionHash);
-
-    public abstract long getFileLOC(String filename);
-
-    public abstract Commit getReleaseCommit(LocalDateTime releaseDate);
-
-    public abstract List<ProjectFile> getFiles(String commitHash, String revisionHash);
+    Commit getCommit(LocalDateTime releaseDate);
 }
