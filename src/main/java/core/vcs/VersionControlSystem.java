@@ -8,17 +8,21 @@ import java.util.List;
 
 public interface VersionControlSystem {
 
-    List<ProjectFile> getFiles(String commitHash, String revisionHash);
+    List<ProjectFile> getFiles(String commitHash);
 
-    double getFileAgeInWeeks(String filename, LocalDateTime releaseDate, String revisionHash);
+    double getFileAgeInWeeks(String filename, LocalDateTime releaseDate, String upperBoundCommitHash);
 
-    int getNumberOfAuthorsOfFile(String filename, String revisionHash);
-
-    FileMetric getFileMetrics(String filename, String revisionHash);
-
-    long getFileLOC(String filename);
+    int getNumberOfAuthorsOfFile(String filename, String upperBoundCommitHash);
 
     Commit getCommit(LocalDateTime releaseDate);
 
-    FileChangeSetSizeMetric getChangeSetSizeMetric(String filename, String commitHash);
+    List<String> getFileRevisions(String filename, String upperBoundCommitHash);
+
+    long getChangeSetSize(String commitHash);
+
+    FileChangeSetSizeMetric getChangeSetSizeMetric(List<String> fileRevisionsList);
+
+    FileMetric getFileMetrics(String filename, List<String> fileRevisionsList);
+
+    long getFileLOC(String filename);
 }

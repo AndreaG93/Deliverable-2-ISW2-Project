@@ -48,18 +48,21 @@ public class Project {
 
             Commit releaseCommit = this.git.getCommit(currentProjectRelease.releaseDate);
 
-            currentProjectRelease.files = this.git.getFiles(releaseCommit.hash, releaseCommit.hash);
+            currentProjectRelease.files = this.git.getFiles(releaseCommit.hash);
 
             List<List<ProjectFile>> portions = ListManagement.divideInChunks(currentProjectRelease.files, currentProjectRelease.files.size() / 4);
             List<Thread> threadList = new ArrayList<>();
 
+            int threadID = 1;
             for (List<ProjectFile> subList : portions) {
 
-                Runnable runnable = new ProjectDatasetBuilderThread(subList, releaseCommit, rootProjectDirectory + name);
+                Runnable runnable = new ProjectDatasetBuilderThread(subList, releaseCommit, rootProjectDirectory + name, threadID);
                 Thread thread = new Thread(runnable);
 
                 thread.start();
                 threadList.add(thread);
+
+                threadID++;
             }
 
             try {
