@@ -39,7 +39,7 @@ public class Git implements VersionControlSystem {
 
         GitFilesGetter gitOutputReader = new GitFilesGetter();
 
-        this.gitApplication.executeWithOutputRedirection(gitOutputReader, "ls-tree", "-r", "--name-only", commitHash);
+        this.gitApplication.executeWithOutputRedirection(gitOutputReader, "ls-tree", "-r", commitHash);
 
         return gitOutputReader.output;
     }
@@ -94,8 +94,6 @@ public class Git implements VersionControlSystem {
         return gitOutputReader.output - 1;
     }
 
-    // log --follow --format=%H 7210d7a4b11b97a6b0051c117d9290c2143e53e6 -- pom.xml
-// diff-tree --no-commit-id --name-only -r d95ad49efb67b4455d6df9153ad46931a3ce3b0c
     @Override
     public FileChangeSetSizeMetric getChangeSetSizeMetric(List<String> fileRevisionsList) {
 
@@ -140,10 +138,6 @@ public class Git implements VersionControlSystem {
             if (output.maxLOCAdded < gitOutputReader.insertions)
                 output.maxLOCAdded = gitOutputReader.insertions;
 
-            // double actualFileAge = getFileAgeInWeeks(filename, null, revisionHash);
-            // actualFileAge * (addedCodeLines + removedCodeLines + modifiedCodeLines);
-
-
             gitOutputReader.clearStatistics();
         }
 
@@ -159,13 +153,12 @@ public class Git implements VersionControlSystem {
     }
 
     @Override
-    public long getFileLOC(String filename) {
-        // TODO NOT WORK
-        /*List<String> queryOutput = executeExternalApplication(this.repositoryLocalDirectory, "wsl", "cloc", "--quiet", filename);
+    public long getFileLOC(String fileHash) {
 
-        String[] output = queryOutput.get(3).split("\\s+");
+        ExternalApplicationOutputLinesCounter gitOutputReader = new ExternalApplicationOutputLinesCounter();
 
-        return Long.parseLong(output[4]);*/
-        return 0;
+        this.gitApplication.executeWithOutputRedirection(gitOutputReader, "cat-file", "-p", fileHash);
+
+        return gitOutputReader.output;
     }
 }

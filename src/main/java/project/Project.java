@@ -9,10 +9,10 @@ import project.entities.Commit;
 import project.entities.ProjectFile;
 import project.entities.ProjectRelease;
 import project.exporter.ProjectDatasetExporter;
-import utilis.common.ListManagement;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Logger;
 
 
@@ -50,19 +50,18 @@ public class Project {
 
             currentProjectRelease.files = this.git.getFiles(releaseCommit.hash);
 
-            List<List<ProjectFile>> portions = ListManagement.divideInChunks(currentProjectRelease.files, currentProjectRelease.files.size() / 4);
+            ConcurrentLinkedQueue<ProjectFile> waitFreeQueue = new ConcurrentLinkedQueue<>(currentProjectRelease.files);
+
             List<Thread> threadList = new ArrayList<>();
 
-            int threadID = 1;
-            for (List<ProjectFile> subList : portions) {
+            for (int threadID = 0; threadID < 4; threadID++) {
 
-                Runnable runnable = new ProjectDatasetBuilderThread(subList, releaseCommit, rootProjectDirectory + name, threadID);
+                Runnable runnable = new ProjectDatasetBuilderThread(waitFreeQueue, releaseCommit, rootProjectDirectory + name, threadID);
                 Thread thread = new Thread(runnable);
 
                 thread.start();
                 threadList.add(thread);
 
-                threadID++;
             }
 
             try {

@@ -14,13 +14,34 @@ public class GitFilesGetter implements ExternalApplicationOutputReader {
         this.output = new ArrayList<>();
     }
 
+    private boolean isJavaFile(String filename) {
+
+        int lastIndexOf = filename.lastIndexOf(".");
+        if (lastIndexOf == -1)
+            return false;
+
+        String extension = filename.substring(lastIndexOf).toLowerCase();
+
+        return extension.equals(".java");
+    }
+
     @Override
     public void readOutputLine(String input) {
 
-        ProjectFile projectFile = new ProjectFile();
-        projectFile.name = input;
+        String[] fileData = input.split("\\s+");
 
-        this.output.add(projectFile);
+        String fileName = fileData[3];
+        String fileHash = fileData[2];
+
+        if (isJavaFile(fileName)) {
+
+            ProjectFile projectFile = new ProjectFile();
+
+            projectFile.name = fileName;
+            projectFile.hash = fileHash;
+
+            this.output.add(projectFile);
+        }
     }
 
     @Override

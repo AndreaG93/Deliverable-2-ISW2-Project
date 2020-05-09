@@ -3,6 +3,7 @@ package project.entities;
 public class ProjectFile {
 
     public String name;
+    public String hash;
 
     public long LOC;
     public long LOCTouched;
@@ -23,6 +24,7 @@ public class ProjectFile {
     public double averageChangeSetSize;
 
     public double ageInWeeks;
+    public double weightedAgeInWeeks;
 
     public boolean isBuggy;
 }

@@ -8,18 +8,19 @@ import project.entities.Commit;
 import project.entities.ProjectFile;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Logger;
 
 public class ProjectDatasetBuilderThread implements Runnable {
 
-    private final List<ProjectFile> projectFileList;
+    private final ConcurrentLinkedQueue<ProjectFile> projectFileWaitFreeList;
     private final VersionControlSystem versionControlSystem;
     private final Commit releaseCommit;
     private final int id;
 
-    public ProjectDatasetBuilderThread(List<ProjectFile> projectFileList, Commit releaseCommit, String repositoryLocalDirectory, int id) {
+    public ProjectDatasetBuilderThread(ConcurrentLinkedQueue<ProjectFile> projectFileWaitFreeList, Commit releaseCommit, String repositoryLocalDirectory, int id) {
 
-        this.projectFileList = projectFileList;
+        this.projectFileWaitFreeList = projectFileWaitFreeList;
         this.versionControlSystem = new Git(repositoryLocalDirectory);
         this.releaseCommit = releaseCommit;
         this.id = id;
@@ -30,43 +31,47 @@ public class ProjectDatasetBuilderThread implements Runnable {
 
         int currentFileIndex = 0;
 
-        int percentage25 = (int) (this.projectFileList.size() * 0.25);
-        int percentage50 = (int) (this.projectFileList.size() * 0.50);
-        int percentage75 = (int) (this.projectFileList.size() * 0.75);
-        int percentage100 = this.projectFileList.size();
+        int percentage25 = (int) (this.projectFileWaitFreeList.size() * 0.25);
+        int percentage50 = (int) (this.projectFileWaitFreeList.size() * 0.50);
+        int percentage75 = (int) (this.projectFileWaitFreeList.size() * 0.75);
+        int percentage100 = this.projectFileWaitFreeList.size();
 
         Logger logger = Logger.getLogger(ProjectDatasetBuilderThread.class.getName());
 
-        for (ProjectFile projectFile : this.projectFileList) {
+        for (ProjectFile currentProjectFile = this.projectFileWaitFreeList.poll(); currentProjectFile != null; currentProjectFile = this.projectFileWaitFreeList.poll()) {
 
-            List<String> fileRevisionsList = this.versionControlSystem.getFileRevisions(projectFile.name, this.releaseCommit.hash);
+            List<String> fileRevisionsList = this.versionControlSystem.getFileRevisions(currentProjectFile.name, this.releaseCommit.hash);
 
-            FileMetric fileMetricSet1 = this.versionControlSystem.getFileMetrics(projectFile.name, fileRevisionsList);
+            FileMetric fileMetricSet1 = this.versionControlSystem.getFileMetrics(currentProjectFile.name, fileRevisionsList);
             FileChangeSetSizeMetric fileMetricSet2 = this.versionControlSystem.getChangeSetSizeMetric(fileRevisionsList);
 
-            projectFile.numberOfRevisions = fileRevisionsList.size();
+            currentProjectFile.numberOfRevisions = fileRevisionsList.size();
 
-            projectFile.LOC = 0;
-            projectFile.LOCTouched = fileMetricSet1.LOCTouched;
+            currentProjectFile.LOC = 0;
+            currentProjectFile.LOCTouched = fileMetricSet1.LOCTouched;
 
-            projectFile.LOCAdded = fileMetricSet1.LOCAdded;
-            projectFile.maxLOCAdded = fileMetricSet1.maxLOCAdded;
-            projectFile.averageLOCAdded = fileMetricSet1.averageLOCAdded;
+            currentProjectFile.LOCAdded = fileMetricSet1.LOCAdded;
+            currentProjectFile.maxLOCAdded = fileMetricSet1.maxLOCAdded;
+            currentProjectFile.averageLOCAdded = fileMetricSet1.averageLOCAdded;
 
-            projectFile.churn = fileMetricSet1.churn;
-            projectFile.maxChurn = fileMetricSet1.maxChurn;
-            projectFile.averageChurn = fileMetricSet1.averageChurn;
+            currentProjectFile.churn = fileMetricSet1.churn;
+            currentProjectFile.maxChurn = fileMetricSet1.maxChurn;
+            currentProjectFile.averageChurn = fileMetricSet1.averageChurn;
 
             if (fileRevisionsList.contains(this.releaseCommit.hash))
-                projectFile.changeSetSize = this.versionControlSystem.getChangeSetSize(this.releaseCommit.hash);
+                currentProjectFile.changeSetSize = this.versionControlSystem.getChangeSetSize(this.releaseCommit.hash);
             else
-                projectFile.changeSetSize = 0;
+                currentProjectFile.changeSetSize = 0;
 
-            projectFile.maxChangeSetSize = fileMetricSet2.maxChangeSetSize;
-            projectFile.averageChangeSetSize = fileMetricSet2.averageChangeSetSize;
+            currentProjectFile.maxChangeSetSize = fileMetricSet2.maxChangeSetSize;
+            currentProjectFile.averageChangeSetSize = fileMetricSet2.averageChangeSetSize;
 
-            projectFile.numberOfAuthors = versionControlSystem.getNumberOfAuthorsOfFile(projectFile.name, releaseCommit.hash);
-            projectFile.ageInWeeks = versionControlSystem.getFileAgeInWeeks(projectFile.name, releaseCommit.date, releaseCommit.hash);
+            currentProjectFile.numberOfAuthors = versionControlSystem.getNumberOfAuthorsOfFile(currentProjectFile.name, releaseCommit.hash);
+
+            currentProjectFile.ageInWeeks = versionControlSystem.getFileAgeInWeeks(currentProjectFile.name, releaseCommit.date, releaseCommit.hash);
+            currentProjectFile.weightedAgeInWeeks = currentProjectFile.ageInWeeks / currentProjectFile.LOCTouched;
+
+            currentProjectFile.LOC = this.versionControlSystem.getFileLOC(currentProjectFile.hash);
 
             currentFileIndex++;
 
