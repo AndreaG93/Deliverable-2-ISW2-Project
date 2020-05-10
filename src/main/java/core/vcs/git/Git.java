@@ -1,7 +1,7 @@
 package core.vcs.git;
 
-import core.vcs.FileChangeSetSizeMetric;
-import core.vcs.FileMetric;
+import core.vcs.FileChangeSetSizeMetrics;
+import core.vcs.FileLOCMetrics;
 import core.vcs.VersionControlSystem;
 import project.entities.Commit;
 import project.entities.ProjectFile;
@@ -95,33 +95,34 @@ public class Git implements VersionControlSystem {
     }
 
     @Override
-    public FileChangeSetSizeMetric getChangeSetSizeMetric(List<String> fileRevisionsList) {
+    public FileChangeSetSizeMetrics getChangeSetSizeMetric(List<String> fileRevisionsList) {
 
-        FileChangeSetSizeMetric output = new FileChangeSetSizeMetric();
+        long maxChangeSetSize = 0;
+        long averageChangeSetSize = 0;
 
         for (String revisionHash : fileRevisionsList) {
 
             long currentChangeSetSize = getChangeSetSize(revisionHash);
 
-            if (output.maxChangeSetSize < currentChangeSetSize)
-                output.maxChangeSetSize = currentChangeSetSize;
+            if (maxChangeSetSize < currentChangeSetSize)
+                maxChangeSetSize = currentChangeSetSize;
 
-            output.averageChangeSetSize += currentChangeSetSize;
+            averageChangeSetSize += currentChangeSetSize;
         }
 
-        output.averageChangeSetSize = output.averageChangeSetSize / fileRevisionsList.size();
+        averageChangeSetSize /= fileRevisionsList.size();
 
-        return output;
+        return new FileChangeSetSizeMetrics(maxChangeSetSize, averageChangeSetSize);
     }
 
     @Override
-    public FileMetric getFileMetrics(String filename, List<String> fileRevisionsList) {
+    public FileLOCMetrics getFileMetrics(String filename, List<String> fileRevisionsList) {
 
         long addedCodeLines = 0;
         long removedCodeLines = 0;
         long modifiedCodeLines = 0;
 
-        FileMetric output = new FileMetric();
+        FileLOCMetrics output = new FileLOCMetrics();
         GitFileCodeChangesGetter gitOutputReader = new GitFileCodeChangesGetter();
 
         for (String revisionHash : fileRevisionsList) {

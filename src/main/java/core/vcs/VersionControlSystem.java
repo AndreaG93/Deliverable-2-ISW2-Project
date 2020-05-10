@@ -20,9 +20,9 @@ public interface VersionControlSystem {
 
     long getChangeSetSize(String commitHash);
 
-    FileChangeSetSizeMetric getChangeSetSizeMetric(List<String> fileRevisionsList);
+    FileChangeSetSizeMetrics getChangeSetSizeMetric(List<String> fileRevisionsList);
 
-    FileMetric getFileMetrics(String filename, List<String> fileRevisionsList);
+    FileLOCMetrics getFileMetrics(String filename, List<String> fileRevisionsList);
 
     long getFileLOC(String filename);
 }

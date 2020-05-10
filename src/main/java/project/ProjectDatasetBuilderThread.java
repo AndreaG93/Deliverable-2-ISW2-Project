@@ -1,7 +1,7 @@
 package project;
 
-import core.vcs.FileChangeSetSizeMetric;
-import core.vcs.FileMetric;
+import core.vcs.FileChangeSetSizeMetrics;
+import core.vcs.FileLOCMetrics;
 import core.vcs.VersionControlSystem;
 import core.vcs.git.Git;
 import project.entities.Commit;
@@ -42,8 +42,8 @@ public class ProjectDatasetBuilderThread implements Runnable {
 
             List<String> fileRevisionsList = this.versionControlSystem.getFileRevisions(currentProjectFile.name, this.releaseCommit.hash);
 
-            FileMetric fileMetricSet1 = this.versionControlSystem.getFileMetrics(currentProjectFile.name, fileRevisionsList);
-            FileChangeSetSizeMetric fileMetricSet2 = this.versionControlSystem.getChangeSetSizeMetric(fileRevisionsList);
+            FileLOCMetrics fileMetricSet1 = this.versionControlSystem.getFileMetrics(currentProjectFile.name, fileRevisionsList);
+            FileChangeSetSizeMetrics fileMetricSet2 = this.versionControlSystem.getChangeSetSizeMetric(fileRevisionsList);
 
             currentProjectFile.numberOfRevisions = fileRevisionsList.size();
 

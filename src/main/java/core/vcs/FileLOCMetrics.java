@@ -1,6 +1,6 @@
 package core.vcs;
 
-public class FileMetric {
+final public class FileLOCMetrics {
 
     public long LOCTouched;
 
@@ -12,7 +12,7 @@ public class FileMetric {
     public long maxChurn;
     public double averageChurn;
 
-    public FileMetric() {
+    public FileLOCMetrics() {
 
         this.averageChurn = 0;
         this.maxChurn = 0;

@@ -44,7 +44,9 @@ public class Project {
 
     public void getDataFromVersionControlSystem() {
 
-        for (ProjectRelease currentProjectRelease : this.projectReleases) {
+        for (int i = 0; i < this.projectReleases.length / 2; i++) {
+
+            ProjectRelease currentProjectRelease = this.projectReleases[i];
 
             Commit releaseCommit = this.git.getCommit(currentProjectRelease.releaseDate);
 
@@ -61,7 +63,6 @@ public class Project {
 
                 thread.start();
                 threadList.add(thread);
-
             }
 
             try {
@@ -74,8 +75,6 @@ public class Project {
                 logger.severe(e.getMessage());
                 System.exit(e.hashCode());
             }
-
-            break;
         }
     }
 
