@@ -1,28 +1,13 @@
 package core.vcs;
 
-import project.entities.Commit;
-import project.entities.ProjectFile;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
 public interface VersionControlSystem {
 
-    List<ProjectFile> getFiles(String commitHash);
+    List<ReleaseFile> getReleaseFiles(String releaseCommitHash);
 
-    double getFileAgeInWeeks(String filename, LocalDateTime releaseDate, String upperBoundCommitHash);
+    ReleaseCommit getReleaseCommit(LocalDateTime releaseDate);
 
-    int getNumberOfAuthorsOfFile(String filename, String upperBoundCommitHash);
-
-    Commit getCommit(LocalDateTime releaseDate);
-
-    List<String> getFileRevisions(String filename, String upperBoundCommitHash);
-
-    long getChangeSetSize(String commitHash);
-
-    FileChangeSetSizeMetrics getChangeSetSizeMetric(List<String> fileRevisionsList);
-
-    FileLOCMetrics getFileMetrics(String filename, List<String> fileRevisionsList);
-
-    long getFileLOC(String filename);
+    void computeFileMetrics(ReleaseFile releaseFile, ReleaseCommit releaseCommit);
 }

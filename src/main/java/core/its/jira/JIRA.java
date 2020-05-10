@@ -1,9 +1,9 @@
 package core.its.jira;
 
 import core.its.IssueTrackingSystem;
+import core.vcs.Release;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import project.entities.ProjectRelease;
 import utilis.common.JSONManagement;
 
 import java.lang.reflect.Field;
@@ -26,9 +26,9 @@ public class JIRA implements IssueTrackingSystem {
     }
 
     @Override
-    public ProjectRelease[] getProjectReleases(String projectName) {
+    public Release[] getProjectReleases(String projectName) {
 
-        AbstractMap<LocalDateTime, ProjectRelease> output = new TreeMap<>();
+        AbstractMap<LocalDateTime, Release> output = new TreeMap<>();
 
         String url = jiraURL + projectName;
 
@@ -38,7 +38,7 @@ public class JIRA implements IssueTrackingSystem {
         for (int i = 0; i < projectVersions.length(); i++) {
 
             boolean isCurrentReleaseDiscarded = false;
-            ProjectRelease currentProjectRelease = new ProjectRelease();
+            Release currentProjectRelease = new Release();
 
             for (String releaseProperty : releaseProperties) {
 
@@ -48,7 +48,7 @@ public class JIRA implements IssueTrackingSystem {
 
                     try {
 
-                        Field field = ProjectRelease.class.getField(releaseProperty);
+                        Field field = Release.class.getField(releaseProperty);
 
                         if (field.getType().getName().equals("java.time.LocalDateTime"))
                             field.set(currentProjectRelease, LocalDate.parse(propertyValue).atStartOfDay().plusHours(23).plusMinutes(59).plusSeconds(59));
@@ -75,6 +75,6 @@ public class JIRA implements IssueTrackingSystem {
             }
         }
 
-        return output.values().toArray(new ProjectRelease[0]);
+        return output.values().toArray(new Release[0]);
     }
 }

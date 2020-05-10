@@ -22,6 +22,6 @@ public class ApplicationEntryPoint {
         project.getDataFromVersionControlSystem();
 
         logger.info("Exporting collected dataset...");
-        project.exportCollectedDataset("./OUTPUT.csv");
+        project.exportCollectedDataset();
     }
 }

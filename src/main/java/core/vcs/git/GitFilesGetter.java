@@ -1,6 +1,6 @@
 package core.vcs.git;
 
-import project.entities.ProjectFile;
+import core.vcs.ReleaseFile;
 import utilis.external.ExternalApplicationOutputReader;
 
 import java.util.ArrayList;
@@ -8,7 +8,7 @@ import java.util.List;
 
 public class GitFilesGetter implements ExternalApplicationOutputReader {
 
-    public final List<ProjectFile> output;
+    public final List<ReleaseFile> output;
 
     public GitFilesGetter() {
         this.output = new ArrayList<>();
@@ -16,7 +16,7 @@ public class GitFilesGetter implements ExternalApplicationOutputReader {
 
     private boolean isJavaFile(String filename) {
 
-        int lastIndexOf = filename.lastIndexOf(".");
+        int lastIndexOf = filename.lastIndexOf('.');
         if (lastIndexOf == -1)
             return false;
 
@@ -33,15 +33,8 @@ public class GitFilesGetter implements ExternalApplicationOutputReader {
         String fileName = fileData[3];
         String fileHash = fileData[2];
 
-        if (isJavaFile(fileName)) {
-
-            ProjectFile projectFile = new ProjectFile();
-
-            projectFile.name = fileName;
-            projectFile.hash = fileHash;
-
-            this.output.add(projectFile);
-        }
+        if (isJavaFile(fileName))
+            this.output.add(new ReleaseFile(fileName, fileHash));
     }
 
     @Override

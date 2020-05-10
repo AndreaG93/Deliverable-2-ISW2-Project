@@ -1,8 +1,8 @@
 package core.its;
 
-import project.entities.ProjectRelease;
+import core.vcs.Release;
 
 public interface IssueTrackingSystem {
 
-    ProjectRelease[] getProjectReleases(String projectName);
+    Release[] getProjectReleases(String projectName);
 }

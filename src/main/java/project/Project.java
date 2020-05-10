@@ -3,12 +3,11 @@ package project;
 import core.ApplicationEntryPoint;
 import core.its.IssueTrackingSystem;
 import core.its.jira.JIRA;
+import core.vcs.Release;
+import core.vcs.ReleaseCommit;
+import core.vcs.ReleaseFile;
 import core.vcs.VersionControlSystem;
 import core.vcs.git.Git;
-import project.entities.Commit;
-import project.entities.ProjectFile;
-import project.entities.ProjectRelease;
-import project.exporter.ProjectDatasetExporter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,13 +18,14 @@ import java.util.logging.Logger;
 public class Project {
 
     private static final String rootProjectDirectory = "C://";
-    public final String name;
 
     private final VersionControlSystem git;
     private final IssueTrackingSystem jira;
 
-    public ProjectRelease[] projectReleases;
+    public final String name;
     private final Logger logger;
+
+    private Release[] releases;
 
     public Project(String name, String repositoryURL) {
 
@@ -39,26 +39,26 @@ public class Project {
 
     public void getDataFromIssueTrackingSystem() {
 
-        this.projectReleases = this.jira.getProjectReleases(this.name);
+        this.releases = this.jira.getProjectReleases(this.name);
     }
 
     public void getDataFromVersionControlSystem() {
 
-        for (int i = 0; i < this.projectReleases.length / 2; i++) {
+        for (int i = 0; i < this.releases.length / 2; i++) {
 
-            ProjectRelease currentProjectRelease = this.projectReleases[i];
+            Release currentRelease = this.releases[i];
 
-            Commit releaseCommit = this.git.getCommit(currentProjectRelease.releaseDate);
+            ReleaseCommit releaseCommit = this.git.getReleaseCommit(currentRelease.releaseDate);
 
-            currentProjectRelease.files = this.git.getFiles(releaseCommit.hash);
+            currentRelease.files = this.git.getReleaseFiles(releaseCommit.hash);
 
-            ConcurrentLinkedQueue<ProjectFile> waitFreeQueue = new ConcurrentLinkedQueue<>(currentProjectRelease.files);
+            ConcurrentLinkedQueue<ReleaseFile> waitFreeQueue = new ConcurrentLinkedQueue<>(currentRelease.files);
 
             List<Thread> threadList = new ArrayList<>();
 
             for (int threadID = 0; threadID < 4; threadID++) {
 
-                Runnable runnable = new ProjectDatasetBuilderThread(waitFreeQueue, releaseCommit, rootProjectDirectory + name, threadID);
+                Runnable runnable = new ProjectDatasetBuilderThread(waitFreeQueue, new Git(rootProjectDirectory, null, rootProjectDirectory + name), releaseCommit);
                 Thread thread = new Thread(runnable);
 
                 thread.start();
@@ -75,12 +75,14 @@ public class Project {
                 logger.severe(e.getMessage());
                 System.exit(e.hashCode());
             }
+
+            break;
         }
     }
 
-    public void exportCollectedDataset(String outputFileName) {
+    public void exportCollectedDataset() {
 
-        ProjectDatasetExporter.exportReleaseInfo(this);
-        ProjectDatasetExporter.exportTo(this, outputFileName);
+        ProjectDatasetExporter.exportProjectReleasesInfo(this.name, this.releases);
+        ProjectDatasetExporter.exportProjectReleasesFileDataset(this.name, this.releases);
     }
 }
