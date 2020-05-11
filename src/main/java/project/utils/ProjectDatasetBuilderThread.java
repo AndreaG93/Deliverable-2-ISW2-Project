@@ -1,8 +1,8 @@
-package project;
+package project.utils;
 
-import core.vcs.ReleaseCommit;
-import core.vcs.ReleaseFile;
-import core.vcs.VersionControlSystem;
+import project.datasources.vcs.VersionControlSystem;
+import project.release.ReleaseCommit;
+import project.release.ReleaseFile;
 
 import java.util.Queue;
 

@@ -1,4 +1,7 @@
-package core.vcs;
+package project.datasources.vcs;
+
+import project.release.ReleaseCommit;
+import project.release.ReleaseFile;
 
 import java.time.LocalDateTime;
 import java.util.List;

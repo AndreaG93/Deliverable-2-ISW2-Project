@@ -1,6 +1,6 @@
-package core.vcs.git;
+package project.datasources.vcs.git;
 
-import core.vcs.ReleaseCommit;
+import project.release.ReleaseCommit;
 import utilis.external.ExternalApplicationOutputReader;
 
 import java.time.LocalDateTime;

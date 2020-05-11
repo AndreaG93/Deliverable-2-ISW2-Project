@@ -1,4 +1,4 @@
-package core;
+package project.datasources;
 
 import project.Project;
 

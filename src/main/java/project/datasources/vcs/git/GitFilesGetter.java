@@ -1,6 +1,6 @@
-package core.vcs.git;
+package project.datasources.vcs.git;
 
-import core.vcs.ReleaseFile;
+import project.release.ReleaseFile;
 import utilis.external.ExternalApplicationOutputReader;
 
 import java.util.ArrayList;

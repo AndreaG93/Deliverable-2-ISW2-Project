@@ -1,6 +1,10 @@
-package core;
+package project.metadata;
 
-public enum FileMetrics {
+public enum ReleaseFileMetadata {
+
+    releaseVersionOrderID,
+
+    name,
 
     LOC,
     LOCTouched,

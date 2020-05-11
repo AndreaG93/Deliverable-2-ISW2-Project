@@ -12,23 +12,31 @@ import java.util.logging.Logger;
 
 public class JSONManagement {
 
+    private JSONManagement() {
+    }
+
     public static JSONObject readJsonFromUrl(String url) {
 
         JSONObject output = null;
 
+        InputStream inputStream = null;
+        BufferedReader bufferedReader = null;
+
         try {
-            InputStream is = new URL(url).openStream();
-            BufferedReader rd = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+            inputStream = new URL(url).openStream();
+            bufferedReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 
-            String jsonText = readAll(rd);
+            String jsonText = readAll(bufferedReader);
             output = new JSONObject(jsonText);
-
-            is.close();
 
         } catch (Exception e) {
 
             Logger.getLogger(JSONManagement.class.getName()).severe(e.getMessage());
             System.exit(e.hashCode());
+        } finally {
+
+            ResourceManagement.close(bufferedReader);
+            ResourceManagement.close(inputStream);
         }
 
         return output;

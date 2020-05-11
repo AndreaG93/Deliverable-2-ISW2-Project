@@ -1,4 +1,4 @@
-package core.vcs;
+package project.release;
 
 import java.time.LocalDateTime;
 

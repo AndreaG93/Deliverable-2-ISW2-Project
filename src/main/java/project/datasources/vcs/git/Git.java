@@ -1,9 +1,9 @@
-package core.vcs.git;
+package project.datasources.vcs.git;
 
-import core.FileMetrics;
-import core.vcs.ReleaseCommit;
-import core.vcs.ReleaseFile;
-import core.vcs.VersionControlSystem;
+import project.datasources.vcs.VersionControlSystem;
+import project.metadata.ReleaseFileMetadata;
+import project.release.ReleaseCommit;
+import project.release.ReleaseFile;
 import utilis.external.ExternalApplication;
 import utilis.external.ExternalApplicationOutputLinesCounter;
 import utilis.external.ExternalApplicationOutputListMaker;
@@ -57,10 +57,10 @@ public class Git implements VersionControlSystem {
 
         List<String> fileRevisionsHashList = this.getFileRevisionsHash(releaseFile.name, releaseCommit.hash);
 
-        releaseFile.fileMetricsRegistry.put(FileMetrics.numberOfRevisions, fileRevisionsHashList.size());
+        releaseFile.fileMetricsRegistry.put(ReleaseFileMetadata.numberOfRevisions, fileRevisionsHashList.size());
 
         computeFileLOCMetric(releaseFile);
-        computeLOCMetrics(releaseFile, fileRevisionsHashList);
+        computeLOCMetrics(releaseFile, releaseCommit);
         computeFileAgeMetrics(releaseFile, releaseCommit);
         computeNumberOfAuthorsOfFile(releaseFile, releaseCommit);
         computeChangeSetSizeMetrics(releaseFile, releaseCommit, fileRevisionsHashList);
@@ -82,10 +82,10 @@ public class Git implements VersionControlSystem {
         this.gitApplication.execute(gitOutputReader, "log", releaseCommit.hash, "--reverse", "--max-count=1", "--date=iso-strict", "--pretty=format:\"%cd\"", "--", releaseFile.name);
 
         double ageInWeeks = gitOutputReader.output;
-        long LOCTouched = (long) releaseFile.fileMetricsRegistry.get(FileMetrics.LOCTouched);
+        long LOCTouched = (long) releaseFile.fileMetricsRegistry.get(ReleaseFileMetadata.LOCTouched);
 
-        releaseFile.fileMetricsRegistry.put(FileMetrics.ageInWeeks, gitOutputReader.output);
-        releaseFile.fileMetricsRegistry.put(FileMetrics.weightedAgeInWeeks, ageInWeeks / LOCTouched);
+        releaseFile.fileMetricsRegistry.put(ReleaseFileMetadata.ageInWeeks, gitOutputReader.output);
+        releaseFile.fileMetricsRegistry.put(ReleaseFileMetadata.weightedAgeInWeeks, ageInWeeks / LOCTouched);
     }
 
     private void computeNumberOfAuthorsOfFile(ReleaseFile releaseFile, ReleaseCommit releaseCommit) {
@@ -94,7 +94,7 @@ public class Git implements VersionControlSystem {
 
         this.gitApplication.execute(gitOutputReader, "shortlog", releaseCommit.hash, "-s", "--", releaseFile.name);
 
-        releaseFile.fileMetricsRegistry.put(FileMetrics.numberOfAuthors, gitOutputReader.output);
+        releaseFile.fileMetricsRegistry.put(ReleaseFileMetadata.numberOfAuthors, gitOutputReader.output);
     }
 
     private void computeFileLOCMetric(ReleaseFile releaseFile) {
@@ -103,7 +103,7 @@ public class Git implements VersionControlSystem {
 
         this.gitApplication.executeWithOutputRedirection(gitOutputReader, "cat-file", "-p", releaseFile.hash);
 
-        releaseFile.fileMetricsRegistry.put(FileMetrics.LOC, gitOutputReader.output);
+        releaseFile.fileMetricsRegistry.put(ReleaseFileMetadata.LOC, gitOutputReader.output);
     }
 
     private void computeChangeSetSizeMetrics(ReleaseFile releaseFile, ReleaseCommit releaseCommit, List<String> fileRevisionsList) {
@@ -127,12 +127,12 @@ public class Git implements VersionControlSystem {
 
         averageChangeSetSize /= fileRevisionsList.size();
 
-        releaseFile.fileMetricsRegistry.put(FileMetrics.changeSetSize, changeSetSize);
-        releaseFile.fileMetricsRegistry.put(FileMetrics.averageChangeSetSize, averageChangeSetSize);
-        releaseFile.fileMetricsRegistry.put(FileMetrics.maxChangeSetSize, maxChangeSetSize);
+        releaseFile.fileMetricsRegistry.put(ReleaseFileMetadata.changeSetSize, changeSetSize);
+        releaseFile.fileMetricsRegistry.put(ReleaseFileMetadata.averageChangeSetSize, averageChangeSetSize);
+        releaseFile.fileMetricsRegistry.put(ReleaseFileMetadata.maxChangeSetSize, maxChangeSetSize);
     }
 
-    private void computeLOCMetrics(ReleaseFile releaseFile, List<String> fileRevisionsList) {
+    private void computeLOCMetrics(ReleaseFile releaseFile, ReleaseCommit releaseCommit) {
 
         long addedCodeLines = 0;
         long removedCodeLines = 0;
@@ -141,34 +141,57 @@ public class Git implements VersionControlSystem {
         long maxChurn = 0;
         long maxLOCAdded = 0;
 
-        GitFileCodeChangesGetter gitOutputReader = new GitFileCodeChangesGetter();
+        ExternalApplicationOutputListMaker gitOutputReader = new ExternalApplicationOutputListMaker();
 
-        for (String revisionHash : fileRevisionsList) {
+        this.gitApplication.executeWithOutputRedirection(gitOutputReader, "log", "--follow", "--pretty=format:'%H<->%cd'", "--stat", releaseCommit.hash, "--", releaseFile.name);
 
-            this.gitApplication.executeWithOutputRedirection(gitOutputReader, "show", "--stat", "--oneline", "--no-commit-id", revisionHash, "--", releaseFile.name);
+        List<String> gitOutput = gitOutputReader.output;
 
-            modifiedCodeLines += (gitOutputReader.insertions + gitOutputReader.deletions);
-            addedCodeLines += gitOutputReader.insertions;
-            removedCodeLines += gitOutputReader.deletions;
+        for (int index = gitOutput.size() - 1; index >= 0; index -= 4) {
 
-            if (maxChurn < (gitOutputReader.insertions - gitOutputReader.deletions))
-                maxChurn = (gitOutputReader.insertions - gitOutputReader.deletions);
+            long insertions = 0;
+            long deletions = 0;
 
-            if (maxLOCAdded < gitOutputReader.insertions)
-                maxLOCAdded = gitOutputReader.insertions;
+            String[] outputContainingInsertionAndDeletion = gitOutput.get(index).split("\\s+");
+            String[] outputContainingModifications = gitOutput.get(index - 1).split("\\s+");
 
-            gitOutputReader.clearStatistics();
+            String modificationFlag = outputContainingModifications[outputContainingModifications.length - 1];
+
+            if (modificationFlag.contains("-") && modificationFlag.contains("+")) {
+
+                insertions = Long.parseLong(outputContainingInsertionAndDeletion[4]);
+                deletions = Long.parseLong(outputContainingInsertionAndDeletion[6]);
+
+            } else if (modificationFlag.contains("-"))
+
+                deletions = Long.parseLong(outputContainingInsertionAndDeletion[4]);
+
+            else if (modificationFlag.contains("+"))
+
+                insertions = Long.parseLong(outputContainingInsertionAndDeletion[4]);
+
+            modifiedCodeLines += (insertions + deletions);
+            addedCodeLines += insertions;
+            removedCodeLines += deletions;
+
+            if (maxChurn < (insertions - deletions))
+                maxChurn = (insertions - deletions);
+
+            if (maxLOCAdded < insertions)
+                maxLOCAdded = insertions;
         }
 
-        releaseFile.fileMetricsRegistry.put(FileMetrics.LOCTouched, addedCodeLines + removedCodeLines + modifiedCodeLines);
+        int numberOfRevision = (int) releaseFile.fileMetricsRegistry.get(ReleaseFileMetadata.numberOfRevisions);
 
-        releaseFile.fileMetricsRegistry.put(FileMetrics.LOCAdded, addedCodeLines);
-        releaseFile.fileMetricsRegistry.put(FileMetrics.maxLOCAdded, maxLOCAdded);
-        releaseFile.fileMetricsRegistry.put(FileMetrics.averageLOCAdded, addedCodeLines / fileRevisionsList.size());
+        releaseFile.fileMetricsRegistry.put(ReleaseFileMetadata.LOCTouched, addedCodeLines + removedCodeLines + modifiedCodeLines);
 
-        releaseFile.fileMetricsRegistry.put(FileMetrics.churn, addedCodeLines - removedCodeLines);
-        releaseFile.fileMetricsRegistry.put(FileMetrics.maxChurn, maxChurn);
-        releaseFile.fileMetricsRegistry.put(FileMetrics.averageChurn, (addedCodeLines - removedCodeLines) / fileRevisionsList.size());
+        releaseFile.fileMetricsRegistry.put(ReleaseFileMetadata.LOCAdded, addedCodeLines);
+        releaseFile.fileMetricsRegistry.put(ReleaseFileMetadata.maxLOCAdded, maxLOCAdded);
+        releaseFile.fileMetricsRegistry.put(ReleaseFileMetadata.averageLOCAdded, addedCodeLines / numberOfRevision);
+
+        releaseFile.fileMetricsRegistry.put(ReleaseFileMetadata.churn, addedCodeLines - removedCodeLines);
+        releaseFile.fileMetricsRegistry.put(ReleaseFileMetadata.maxChurn, maxChurn);
+        releaseFile.fileMetricsRegistry.put(ReleaseFileMetadata.averageChurn, (addedCodeLines - removedCodeLines) / numberOfRevision);
     }
 
     private long getChangeSetSize(String commitHash) {

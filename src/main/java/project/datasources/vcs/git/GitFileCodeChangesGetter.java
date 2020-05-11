@@ -1,4 +1,4 @@
-package core.vcs.git;
+package project.datasources.vcs.git;
 
 import utilis.external.ExternalApplicationOutputReader;
 

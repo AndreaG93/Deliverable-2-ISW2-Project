@@ -1,11 +1,14 @@
 package utilis.common;
 
-import project.ProjectDatasetExporter;
+import project.utils.ProjectDatasetExporter;
 
 import java.io.Closeable;
 import java.util.logging.Logger;
 
 public class ResourceManagement {
+
+    private ResourceManagement() {
+    }
 
     public static void close(Closeable closeableResource) {
 

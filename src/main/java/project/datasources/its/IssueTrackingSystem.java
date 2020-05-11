@@ -1,6 +1,6 @@
-package core.its;
+package project.datasources.its;
 
-import core.vcs.Release;
+import project.release.Release;
 
 public interface IssueTrackingSystem {
 
