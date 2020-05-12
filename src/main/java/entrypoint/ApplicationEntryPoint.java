@@ -1,4 +1,4 @@
-package project.datasources;
+package entrypoint;
 
 import project.Project;
 

@@ -1,13 +1,12 @@
 package project;
 
-import project.datasources.ApplicationEntryPoint;
+import entrypoint.ApplicationEntryPoint;
 import project.datasources.its.IssueTrackingSystem;
 import project.datasources.its.jira.JIRA;
 import project.datasources.vcs.VersionControlSystem;
 import project.datasources.vcs.git.Git;
 import project.metadata.ReleaseFileMetadata;
 import project.metadata.ReleaseMetadata;
-import project.release.Exportable;
 import project.release.Release;
 import project.release.ReleaseCommit;
 import project.release.ReleaseFile;
@@ -25,6 +24,7 @@ import java.util.logging.Logger;
 public class Project {
 
     private static final String rootProjectDirectory = "C://";
+    private int numberOfReleaseToAnalyze = 0;
 
     private final VersionControlSystem git;
     private final IssueTrackingSystem jira;
@@ -47,22 +47,20 @@ public class Project {
     public void getDataFromIssueTrackingSystem() {
 
         this.releases = this.jira.getProjectReleases(this.name);
+        this.numberOfReleaseToAnalyze = 1; //this.releases.length / 2;
     }
 
     public void getDataFromVersionControlSystem() {
 
-        for (int i = 0; i < this.releases.length / 2; i++) {
+        for (int i = 0; i < this.numberOfReleaseToAnalyze; i++) {
 
             Release currentRelease = this.releases[i];
-            currentRelease.metadata.put(ReleaseMetadata.releaseVersionOrderID, i);
+            ReleaseCommit currentReleaseCommit = this.git.getReleaseCommit((LocalDateTime) currentRelease.metadata.get(ReleaseMetadata.releaseDate));
+            List<ReleaseFile> currentReleaseFileList = this.git.getReleaseFiles(currentReleaseCommit.hash);
 
-            ReleaseCommit releaseCommit = this.git.getReleaseCommit((LocalDateTime) currentRelease.metadata.get(ReleaseMetadata.releaseDate));
-
-            List<ReleaseFile> kk = this.git.getReleaseFiles(releaseCommit.hash);
-            for (ReleaseFile releaseFile : kk)
+            for (ReleaseFile releaseFile : currentReleaseFileList)
                 releaseFile.fileMetricsRegistry.put(ReleaseFileMetadata.releaseVersionOrderID, i);
-
-            currentRelease.setFiles(kk);
+            currentRelease.setFiles(currentReleaseFileList);
 
             ConcurrentLinkedQueue<ReleaseFile> waitFreeQueue = new ConcurrentLinkedQueue<>(currentRelease.getFiles());
 
@@ -70,7 +68,7 @@ public class Project {
 
             for (int threadID = 0; threadID < 4; threadID++) {
 
-                Runnable runnable = new ProjectDatasetBuilderThread(waitFreeQueue, new Git(rootProjectDirectory, null, rootProjectDirectory + name), releaseCommit);
+                Runnable runnable = new ProjectDatasetBuilderThread(waitFreeQueue, new Git(rootProjectDirectory, null, rootProjectDirectory + name), currentReleaseCommit);
                 Thread thread = new Thread(runnable);
 
                 thread.start();
@@ -87,8 +85,6 @@ public class Project {
                 logger.severe(e.getMessage());
                 System.exit(e.hashCode());
             }
-
-            break; // TODO
         }
     }
 
@@ -97,17 +93,11 @@ public class Project {
         List<String> headerForReleaseDataset = Release.exportMetadataKey();
         List<String> headerForFileDataset = ReleaseFile.exportMetadataKey();
 
-        boolean jj = true;
+        ProjectDatasetExporter.exportHeaderAndDataset("ReleaseInfo.csv", headerForReleaseDataset, Arrays.asList(this.releases));
 
-        ProjectDatasetExporter.exportToCSV("ReleaseInfo.csv", Arrays.asList(this.releases), headerForReleaseDataset, true);
+        ProjectDatasetExporter.exportHeader("FileDataset.csv", headerForFileDataset);
 
-        for (Release release : this.releases) {
-
-            List<Exportable> GG = Arrays.asList(release.getFiles().toArray(new ReleaseFile[0]));
-
-            ProjectDatasetExporter.exportToCSV("FileDataset.csv", GG, headerForFileDataset, jj);
-            jj = false;
-        }
-
+        for (int i = 0; i < this.numberOfReleaseToAnalyze; i++)
+            ProjectDatasetExporter.exportDataset("FileDataset.csv", this.releases[i].getFilesAsExportable());
     }
 }

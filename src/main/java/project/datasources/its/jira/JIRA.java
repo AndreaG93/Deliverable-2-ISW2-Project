@@ -22,7 +22,9 @@ public class JIRA implements IssueTrackingSystem {
     @Override
     public Release[] getProjectReleases(String projectName) {
 
-        AbstractMap<LocalDateTime, Release> output = new TreeMap<>();
+        Release[] output;
+
+        AbstractMap<LocalDateTime, Release> treeMap = new TreeMap<>();
 
         String url = jiraURL + projectName;
 
@@ -36,11 +38,15 @@ public class JIRA implements IssueTrackingSystem {
             if (registry != null) {
 
                 Release release = new Release(registry);
-                output.put((LocalDateTime) release.metadata.get(ReleaseMetadata.releaseDate), release);
+                treeMap.put((LocalDateTime) release.metadata.get(ReleaseMetadata.releaseDate), release);
             }
         }
 
-        return output.values().toArray(new Release[0]);
+        output = treeMap.values().toArray(new Release[0]);
+        for (int i = 0; i < output.length; i++)
+            output[i].metadata.put(ReleaseMetadata.releaseVersionOrderID, i);
+
+        return output;
     }
 
 

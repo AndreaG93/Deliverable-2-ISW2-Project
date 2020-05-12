@@ -1,8 +1,10 @@
 package project.release;
 
 import project.metadata.ReleaseMetadata;
+import project.utils.Exportable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +31,10 @@ public class Release implements Exportable {
         return files;
     }
 
+    public List<Exportable> getFilesAsExportable() {
+        return Arrays.asList(this.files.toArray(new ReleaseFile[0]));
+    }
+
     public void setFiles(List<ReleaseFile> files) {
         this.files = files;
     }
@@ -38,8 +44,8 @@ public class Release implements Exportable {
 
         List<String> output = new ArrayList<>();
 
-        for (ReleaseMetadata metadata : ReleaseMetadata.values())
-            output.add(metadata.toString());
+        for (ReleaseMetadata metadataField : ReleaseMetadata.values())
+            output.add(this.metadata.get(metadataField).toString());
 
         return output;
     }

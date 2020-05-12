@@ -2,7 +2,6 @@ package project.utils;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
-import project.release.Exportable;
 import utilis.common.ResourceManagement;
 
 import java.io.FileWriter;
@@ -14,7 +13,16 @@ public class ProjectDatasetExporter {
     private ProjectDatasetExporter() {
     }
 
-    public static void exportToCSV(String outputFile, List<Exportable> exportableList, List<String> header, boolean addHeader) {
+
+    public static void exportHeader(String outputFile, List<String> header) {
+        exportHeaderAndDataset(outputFile, header, null);
+    }
+
+    public static void exportDataset(String outputFile, List<Exportable> dataset) {
+        exportHeaderAndDataset(outputFile, null, dataset);
+    }
+
+    public static void exportHeaderAndDataset(String outputFile, List<String> header, List<Exportable> dataset) {
 
         FileWriter fileWriter = null;
         CSVPrinter csvPrinter = null;
@@ -27,13 +35,9 @@ public class ProjectDatasetExporter {
             if (header != null)
                 csvPrinter.printRecord(header);
 
-            for (Exportable exportable : exportableList) {
-
-                List<String> values = exportable.exportMetadataValues();
-                if (values.size() == header.size())
-                    csvPrinter.printRecord(exportable.exportMetadataValues());
-            }
-
+            if (dataset != null)
+                for (Exportable data : dataset)
+                    csvPrinter.printRecord(data.exportMetadataValues());
 
         } catch (Exception e) {
 

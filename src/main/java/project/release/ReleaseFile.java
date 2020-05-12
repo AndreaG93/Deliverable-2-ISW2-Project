@@ -1,6 +1,7 @@
 package project.release;
 
 import project.metadata.ReleaseFileMetadata;
+import project.utils.Exportable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
