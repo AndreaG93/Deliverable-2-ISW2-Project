@@ -1,5 +1,6 @@
 package utilis.common;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -38,6 +39,16 @@ public class JSONManagement {
             ResourceManagement.close(bufferedReader);
             ResourceManagement.close(inputStream);
         }
+
+        return output;
+    }
+
+    public static String[] extractFieldFromJsonArray(JSONArray input, String jsonField) {
+
+        String[] output = new String[input.length()];
+
+        for (int index = 0; index < input.length(); index++)
+            output[index] = input.getJSONObject(index).getString(jsonField);
 
         return output;
     }

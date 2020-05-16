@@ -1,7 +1,5 @@
 package utilis.common;
 
-import project.utils.ProjectDatasetExporter;
-
 import java.io.Closeable;
 import java.util.logging.Logger;
 
@@ -19,7 +17,7 @@ public class ResourceManagement {
 
         } catch (Exception e) {
 
-            Logger.getLogger(ProjectDatasetExporter.class.getName()).severe(e.getMessage());
+            Logger.getLogger(FileCSV.class.getName()).severe(e.getMessage());
             System.exit(e.hashCode());
         }
     }

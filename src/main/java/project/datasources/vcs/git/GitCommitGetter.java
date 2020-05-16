@@ -1,6 +1,6 @@
 package project.datasources.vcs.git;
 
-import project.release.ReleaseCommit;
+import project.entities.Commit;
 import utilis.external.ExternalApplicationOutputReader;
 
 import java.time.LocalDateTime;
@@ -8,7 +8,7 @@ import java.time.format.DateTimeFormatter;
 
 public class GitCommitGetter implements ExternalApplicationOutputReader {
 
-    ReleaseCommit output;
+    Commit output;
     boolean isOutputObtained;
 
     public GitCommitGetter() {
@@ -25,7 +25,7 @@ public class GitCommitGetter implements ExternalApplicationOutputReader {
         LocalDateTime commitLocalDateTime = LocalDateTime.parse(commitInfo[1], DateTimeFormatter.ISO_OFFSET_DATE_TIME);
 
         this.isOutputObtained = true;
-        this.output = new ReleaseCommit(commitHash, commitLocalDateTime);
+        this.output = new Commit(commitHash, commitLocalDateTime);
     }
 
     @Override

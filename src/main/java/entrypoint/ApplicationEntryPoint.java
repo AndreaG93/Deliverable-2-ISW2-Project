@@ -1,27 +1,36 @@
 package entrypoint;
 
+import project.Bookkeeper;
+import project.OpenJPA;
 import project.Project;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class ApplicationEntryPoint {
-
-    private static final String projectName = "TINKERPOP";
-    private static final String projectRepositoryURL = "https://github.com/apache/tinkerpop";
 
     public static void main(String[] args) {
 
         Logger logger = Logger.getLogger(ApplicationEntryPoint.class.getName());
 
-        Project project = new Project(projectName, projectRepositoryURL);
+        List<Project> projects = new ArrayList<>();
+        //projects.add(new Bookkeeper());
+        projects.add(new OpenJPA());
 
-        logger.info("Getting data from 'Issue Tracking System'...");
-        project.getDataFromIssueTrackingSystem();
+        for (Project project : projects) {
 
-        logger.info("Getting data from 'Version Control System'...");
-        project.getDataFromVersionControlSystem();
+            logger.info("Analyzing project " + project.name);
 
-        logger.info("Exporting collected dataset...");
-        project.exportCollectedDataset();
+            project.collectAllReleasesAndIssues();
+            project.collectCommitAssociatedToEachRelease();
+            project.collectFilesAssociatedToEachRelease();
+            project.collectBuggyReleaseFiles();
+
+            logger.info("Exporting dataset...");
+            project.exportCollectedDataset();
+
+            logger.info(project.name + "'s analysis complete!");
+        }
     }
 }

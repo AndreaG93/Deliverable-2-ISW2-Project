@@ -1,8 +1,8 @@
-package project.utils;
+package project.entities;
 
 import java.util.List;
 
-public interface Exportable {
+public interface MetadataExportable {
 
     List<String> exportMetadataValues();
 }

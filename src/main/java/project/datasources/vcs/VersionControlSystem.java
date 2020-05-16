@@ -1,16 +1,22 @@
 package project.datasources.vcs;
 
-import project.release.ReleaseCommit;
-import project.release.ReleaseFile;
+import project.entities.Commit;
+import project.entities.File;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 public interface VersionControlSystem {
 
-    List<ReleaseFile> getReleaseFiles(String releaseCommitHash);
+    Commit getCommitByTag(String tag);
 
-    ReleaseCommit getReleaseCommit(LocalDateTime releaseDate);
+    Commit getCommitByDate(LocalDateTime releaseDate);
 
-    void computeFileMetrics(ReleaseFile releaseFile, ReleaseCommit releaseCommit);
+    Commit getCommitByLogMessagePattern(String pattern);
+
+    List<File> getCommitFiles(String commitHash);
+
+    List<String> getFilesChangedByCommit(String commitHash);
+
+    void computeFileMetrics(File releaseFile, Commit releaseCommit);
 }

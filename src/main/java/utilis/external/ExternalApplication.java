@@ -77,8 +77,12 @@ public class ExternalApplication {
 
             Process process = processBuilder.start();
 
-            if (process.waitFor() != 0)
-                this.logger.severe(readErrors(process));
+            if (process.waitFor() != 0) {
+
+                String error = readErrors(process);
+                if (!error.equals(""))
+                    this.logger.severe(readErrors(process));
+            }
 
             if (outputRedirection)
                 bufferedReader = new BufferedReader(new FileReader(temporaryFile));
