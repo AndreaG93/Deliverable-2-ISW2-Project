@@ -1,14 +1,14 @@
 package project.datasources.its;
 
-import project.entities.Issue;
-import project.entities.Release;
-
+import project.model.Issue;
+import project.model.Release;
 import java.util.List;
-import java.util.Map;
 
 public interface IssueTrackingSystem {
 
-    Map<Integer, Release> getReleases(String projectName);
+    List<Release> getReleases();
 
-    List<Issue> getIssues(String projectName);
+    List<Issue> getIssuesWithoutAffectedVersions();
+
+    List<Issue> getIssuesWithAffectedVersions();
 }

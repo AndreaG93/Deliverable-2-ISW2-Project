@@ -2,7 +2,7 @@ package entrypoint;
 
 import project.Bookkeeper;
 import project.OpenJPA;
-import project.Project;
+import project.model.Project;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,20 +15,15 @@ public class ApplicationEntryPoint {
         Logger logger = Logger.getLogger(ApplicationEntryPoint.class.getName());
 
         List<Project> projects = new ArrayList<>();
-        //projects.add(new Bookkeeper());
+        projects.add(new Bookkeeper());
         projects.add(new OpenJPA());
 
         for (Project project : projects) {
 
             logger.info("Analyzing project " + project.name);
 
-            project.collectAllReleasesAndIssues();
-            project.collectCommitAssociatedToEachRelease();
-            project.collectFilesAssociatedToEachRelease();
-            project.collectBuggyReleaseFiles();
-
-            logger.info("Exporting dataset...");
-            project.exportCollectedDataset();
+            project.buildProjectDataset();
+            project.exportProjectDatasetAsCSV();
 
             logger.info(project.name + "'s analysis complete!");
         }

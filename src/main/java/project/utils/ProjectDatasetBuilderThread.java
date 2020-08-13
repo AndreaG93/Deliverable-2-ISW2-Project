@@ -1,19 +1,19 @@
 package project.utils;
 
 import project.datasources.vcs.VersionControlSystem;
-import project.entities.Commit;
-import project.entities.File;
+import project.model.Commit;
+import project.model.ReleaseFile;
 
 import java.util.Queue;
 
 
 public class ProjectDatasetBuilderThread implements Runnable {
 
-    private final Queue<File> waitFreeQueue;
+    private final Queue<ReleaseFile> waitFreeQueue;
     private final VersionControlSystem versionControlSystem;
     private final Commit releaseCommit;
 
-    public ProjectDatasetBuilderThread(Queue<File> waitFreeQueue, VersionControlSystem versionControlSystem, Commit releaseCommit) {
+    public ProjectDatasetBuilderThread(Queue<ReleaseFile> waitFreeQueue, VersionControlSystem versionControlSystem, Commit releaseCommit) {
         this.waitFreeQueue = waitFreeQueue;
         this.versionControlSystem = versionControlSystem;
         this.releaseCommit = releaseCommit;
@@ -22,7 +22,7 @@ public class ProjectDatasetBuilderThread implements Runnable {
     @Override
     public void run() {
 
-        for (File currentReleaseFile = this.waitFreeQueue.poll(); currentReleaseFile != null; currentReleaseFile = this.waitFreeQueue.poll())
+        for (ReleaseFile currentReleaseFile = this.waitFreeQueue.poll(); currentReleaseFile != null; currentReleaseFile = this.waitFreeQueue.poll())
             this.versionControlSystem.computeFileMetrics(currentReleaseFile, this.releaseCommit);
     }
 }

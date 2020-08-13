@@ -1,20 +1,23 @@
-package project.entities.metadata;
+package project.model.metadata;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-public enum FileMetadata {
+public enum MetadataType {
 
-    RELEASE_VERSION_ORDER_ID,
-
+    VERSION_ID,
     NAME,
+    HASH,
+
+    VERSION_INDEX,
+    DATE,
 
     LOC,
     LOCTouched,
 
     NUMBER_OF_REVISIONS,
     NUMBER_OF_AUTHORS,
+    NUMBER_OF_FIX,
 
     LOC_ADDED,
     MAX_LOC_ADDED,
@@ -33,12 +36,12 @@ public enum FileMetadata {
 
     IS_BUGGY;
 
-    public static List<String> exportAsStringList() {
+    public static List<String> convertToStringList(MetadataType[] types) {
 
         List<String> output = new ArrayList<>();
 
-        for (FileMetadata fileMetric : FileMetadata.values())
-            output.add(fileMetric.toString());
+        for (MetadataType x : types)
+            output.add(x.name());
 
         return output;
     }

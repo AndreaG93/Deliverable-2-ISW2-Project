@@ -1,18 +1,20 @@
 package project.datasources.vcs.git;
 
-import project.entities.File;
+import project.model.ReleaseFile;
 import utilis.common.Utils;
 import utilis.external.ExternalApplicationOutputReader;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class GitFilesGetter implements ExternalApplicationOutputReader {
 
-    public final List<File> output;
+    public final Map<String, ReleaseFile> output;
 
     public GitFilesGetter() {
-        this.output = new ArrayList<>();
+        this.output = new TreeMap<>();
     }
 
     @Override
@@ -24,7 +26,7 @@ public class GitFilesGetter implements ExternalApplicationOutputReader {
         String fileHash = fileData[2];
 
         if (Utils.isJavaFile(fileName))
-            this.output.add(new File(fileName, fileHash));
+            this.output.put(fileName, new ReleaseFile(fileName, fileHash));
     }
 
     @Override

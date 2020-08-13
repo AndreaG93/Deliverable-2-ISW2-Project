@@ -3,13 +3,15 @@ package project.datasources.its.jira;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import project.datasources.its.IssueTrackingSystem;
-import project.entities.Issue;
-import project.entities.metadata.ReleaseMetadata;
-import project.entities.Release;
+import project.model.Issue;
+import project.model.Release;
+import project.model.metadata.MetadataType;
+import utilis.common.Utils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import static utilis.common.JSONManagement.extractFieldFromJsonArray;
 import static utilis.common.JSONManagement.readJsonFromUrl;
@@ -18,9 +20,34 @@ public class jira implements IssueTrackingSystem {
 
     private static final String jiraURL = "https://issues.apache.org/jira/rest/api/2/project/";
 
-    public Map<Integer, Release> getReleases(String projectName) {
+    private List<Issue> issueWithoutAffectedVersions;
+    private List<Issue> issueWithAffectedVersions;
+    private List<Release> releases;
 
-        Map<Integer, Release> output = new TreeMap<>();
+    public jira(String projectName) {
+
+        collectReleases(projectName);
+        collectIssues(projectName);
+    }
+
+    @Override
+    public List<Issue> getIssuesWithoutAffectedVersions() {
+        return this.issueWithoutAffectedVersions;
+    }
+
+    @Override
+    public List<Issue> getIssuesWithAffectedVersions() {
+        return this.issueWithAffectedVersions;
+    }
+
+    @Override
+    public List<Release> getReleases() {
+        return this.releases;
+    }
+
+    private void collectReleases(String projectName) {
+
+        this.releases = new ArrayList<>();
 
         String url = jiraURL + projectName.toUpperCase();
 
@@ -29,22 +56,17 @@ public class jira implements IssueTrackingSystem {
         for (int index = 0; index < releasesAsJsonArray.length(); index++) {
 
             JSONObject releaseAsJsonObject = releasesAsJsonArray.getJSONObject(index);
+            Release release = createReleaseFromJSON(releaseAsJsonObject);
 
-            Map<ReleaseMetadata, Object> releaseMetadata = getReleaseMetadataFrom(releaseAsJsonObject);
-
-            if (releaseMetadata != null) {
-
-                Release release = new Release(releaseMetadata);
-                output.put((Integer) release.metadata.get(ReleaseMetadata.ID), release);
-            }
+            if (release != null)
+                this.releases.add(release);
         }
-
-        return output;
     }
 
-    public List<Issue> getIssues(String projectName) {
+    public void collectIssues(String projectName) {
 
-        List<Issue> output = new ArrayList<>();
+        this.issueWithoutAffectedVersions = new ArrayList<>();
+        this.issueWithAffectedVersions = new ArrayList<>();
 
         int j, i = 0, total;
 
@@ -53,7 +75,7 @@ public class jira implements IssueTrackingSystem {
             j = i + 1000;
             String url = "https://issues.apache.org/jira/rest/api/2/search?jql=project=%22"
                     + projectName + "%22AND%22issueType%22=%22Bug%22AND(%22status%22=%22closed%22OR"
-                    + "%22status%22=%22resolved%22)AND%22resolution%22=%22fixed%22&fields=key,resolutiondate,fixVersions,versions,created&startAt="
+                    + "%22status%22=%22resolved%22)AND%22resolution%22=%22fixed%22&fields=key,fixVersions,versions,created&startAt="
                     + i + "&maxResults=" + j;
 
 
@@ -66,45 +88,50 @@ public class jira implements IssueTrackingSystem {
 
                 JSONObject issueAsJsonObject = issuesAsJsonArray.getJSONObject(i % 1000);
 
-                Issue issue = getIssueFrom(issueAsJsonObject);
-                output.add(issue);
+                Issue issue = createIssueFromJSON(issueAsJsonObject);
+
+                if (issue != null)
+                    if (issue.affectedVersionsIDs.length == 0)
+                        this.issueWithoutAffectedVersions.add(issue);
+                    else
+                        this.issueWithAffectedVersions.add(issue);
             }
 
         } while (i < total);
-
-        return output;
     }
 
-    private Map<ReleaseMetadata, Object> getReleaseMetadataFrom(JSONObject input) {
+    private Release createReleaseFromJSON(JSONObject input) {
 
-        Map<ReleaseMetadata, Object> output = new HashMap<>();
+        Release output = null;
 
         if (input.has("id") && input.has("name") & input.has("releaseDate")) {
 
-            output.put(ReleaseMetadata.ID, input.getInt("id"));
-            output.put(ReleaseMetadata.NAME, input.getString("name"));
-            output.put(ReleaseMetadata.RELEASE_DATE, LocalDate.parse(input.getString("releaseDate")).atStartOfDay().plusHours(23).plusMinutes(59).plusSeconds(59));
+            output = new Release();
 
-        } else
-            return null;
+            output.setMetadataValue(MetadataType.VERSION_ID, input.getInt("id"));
+            output.setMetadataValue(MetadataType.NAME, input.getString("name"));
+            output.setMetadataValue(MetadataType.DATE, LocalDate.parse(input.getString("releaseDate")).atStartOfDay().plusHours(23).plusMinutes(59).plusSeconds(59));
+        }
 
         return output;
     }
 
-    private Issue getIssueFrom(JSONObject input) {
+    private Issue createIssueFromJSON(JSONObject input) {
+
+        Issue output = null;
 
         JSONObject jiraFields = input.getJSONObject("fields");
         JSONArray jiraFixedVersions = jiraFields.getJSONArray("fixVersions");
         JSONArray jiraAffectedVersions = jiraFields.getJSONArray("versions");
 
-        int id = input.getInt("id");
         String key = input.getString("key");
         String[] fixedVersionsIDs = extractFieldFromJsonArray(jiraFixedVersions, "id");
         String[] affectedVersionsIDs = extractFieldFromJsonArray(jiraAffectedVersions, "id");
-
         LocalDateTime creationDate = LocalDateTime.parse(jiraFields.getString("created").substring(0, 19));
-        LocalDateTime resolutionDate = LocalDateTime.parse(jiraFields.getString("resolutiondate").substring(0, 19));
 
-        return new Issue(id, key, affectedVersionsIDs, fixedVersionsIDs, creationDate, resolutionDate);
+        if (fixedVersionsIDs.length != 0)
+            output = new Issue(key, Utils.stringArrayToIntArray(affectedVersionsIDs), Utils.stringArrayToIntArray(fixedVersionsIDs), creationDate);
+
+        return output;
     }
 }

@@ -2,7 +2,6 @@ package utilis.common;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
-import project.entities.MetadataExportable;
 
 import java.io.FileWriter;
 import java.util.List;
@@ -10,45 +9,48 @@ import java.util.logging.Logger;
 
 public class FileCSV {
 
-    private final String outputFilename;
+    private FileWriter fileWriter;
+    private CSVPrinter csvPrinter;
 
-    public FileCSV(String outputFilename, List<String> csvHeader) {
+    public FileCSV(String filename, List<String> header) {
 
-        this.outputFilename = outputFilename + ".csv";
-
-        write(csvHeader, null);
-    }
-
-    public void append(List<MetadataExportable> dataset) {
-        write(null, dataset);
-    }
-
-    private void write(List<String> csvHeader, List<MetadataExportable> dataset) {
-
-        FileWriter fileWriter = null;
-        CSVPrinter csvPrinter = null;
+        this.fileWriter = null;
+        this.csvPrinter = null;
 
         try {
 
-            fileWriter = new FileWriter(this.outputFilename, true);
-            csvPrinter = new CSVPrinter(fileWriter, CSVFormat.DEFAULT);
-
-            if (csvHeader != null)
-                csvPrinter.printRecord(csvHeader);
-
-            if (dataset != null)
-                for (MetadataExportable data : dataset)
-                    csvPrinter.printRecord(data.exportMetadataValues());
+            this.fileWriter = new FileWriter(filename + ".csv");
+            this.csvPrinter = new CSVPrinter(fileWriter, CSVFormat.DEFAULT);
 
         } catch (Exception e) {
-
-            Logger.getLogger(FileCSV.class.getName()).severe(e.getMessage());
-            System.exit(e.hashCode());
-
-        } finally {
-
-            ResourceManagement.close(csvPrinter);
-            ResourceManagement.close(fileWriter);
+            printErrorClosingCSVFile(e);
         }
+
+        write(header);
+    }
+
+    public void write(List<String> record) {
+
+        try {
+
+            this.csvPrinter.printRecord(record);
+
+        } catch (Exception e) {
+            printErrorClosingCSVFile(e);
+        }
+    }
+
+    public void close() {
+
+        ResourceManagement.close(csvPrinter);
+        ResourceManagement.close(fileWriter);
+    }
+
+    private void printErrorClosingCSVFile(Exception exception) {
+
+        Logger.getLogger(FileCSV.class.getName()).severe(exception.getMessage());
+        close();
+
+        System.exit(exception.hashCode());
     }
 }

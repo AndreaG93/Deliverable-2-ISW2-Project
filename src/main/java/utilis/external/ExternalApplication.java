@@ -8,28 +8,13 @@ import java.util.logging.Logger;
 
 public class ExternalApplication {
 
-    private final List<String> operatingSystemProgramAndArguments;
+    private final String name;
     private final File workingDirectory;
-    private final Logger logger;
-    private final ExternalApplicationOutputReader nullReader;
 
     public ExternalApplication(String name, String workingDirectory) {
 
+        this.name = name;
         this.workingDirectory = new File(workingDirectory);
-        this.operatingSystemProgramAndArguments = new ArrayList<>();
-        this.operatingSystemProgramAndArguments.add(name);
-
-        this.logger = Logger.getLogger(ExternalApplication.class.getName());
-        this.nullReader = new ExternalApplicationOutputReader() {
-            @Override
-            public void readOutputLine(String input) {
-            }
-
-            @Override
-            public boolean isOutputReadingTerminated() {
-                return false;
-            }
-        };
     }
 
     private static String readErrors(Process process) throws IOException {
@@ -46,7 +31,7 @@ public class ExternalApplication {
     }
 
     public void execute(String... commands) {
-        execute(false, this.nullReader, commands);
+        execute(false, null, commands);
     }
 
     public void execute(ExternalApplicationOutputReader reader, String... commands) {
@@ -59,9 +44,11 @@ public class ExternalApplication {
 
     private void execute(boolean outputRedirection, ExternalApplicationOutputReader reader, String... commands) {
 
-        this.operatingSystemProgramAndArguments.addAll(Arrays.asList(commands));
+        List<String> commandList = new ArrayList<>();
+        commandList.add(this.name);
+        commandList.addAll(Arrays.asList(commands));
 
-        ProcessBuilder processBuilder = new ProcessBuilder(this.operatingSystemProgramAndArguments);
+        ProcessBuilder processBuilder = new ProcessBuilder(commandList);
         processBuilder.directory(this.workingDirectory);
 
         BufferedReader bufferedReader;
@@ -81,7 +68,7 @@ public class ExternalApplication {
 
                 String error = readErrors(process);
                 if (!error.equals(""))
-                    this.logger.severe(readErrors(process));
+                    Logger.getLogger(this.name).severe(error);
             }
 
             if (outputRedirection)
@@ -99,16 +86,14 @@ public class ExternalApplication {
             if (outputRedirection)
                 if (!temporaryFile.delete()) {
 
-                    this.logger.severe(readErrors(process));
+                    Logger.getLogger(this.name).severe(readErrors(process));
                     System.exit(1);
                 }
 
         } catch (Exception e) {
 
-            e.printStackTrace();
+            Logger.getLogger(this.name).severe(e.getMessage());
             System.exit(e.hashCode());
         }
-
-        this.operatingSystemProgramAndArguments.removeAll(Arrays.asList(commands));
     }
 }

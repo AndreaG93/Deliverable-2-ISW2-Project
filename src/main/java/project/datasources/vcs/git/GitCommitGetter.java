@@ -1,6 +1,6 @@
 package project.datasources.vcs.git;
 
-import project.entities.Commit;
+import project.model.Commit;
 import utilis.external.ExternalApplicationOutputReader;
 
 import java.time.LocalDateTime;

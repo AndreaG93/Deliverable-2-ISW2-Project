@@ -1,46 +1,58 @@
 package project.datasources.vcs.git;
 
 import project.datasources.vcs.VersionControlSystem;
-import project.entities.metadata.FileMetadata;
-import project.entities.Commit;
-import project.entities.File;
+import project.model.metadata.MetadataType;
+import project.model.Commit;
+import project.model.ReleaseFile;
 import utilis.external.*;
 
+import java.io.File;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 public class Git implements VersionControlSystem {
 
     private final ExternalApplication gitApplication;
 
-    public Git(String workingDirectory, String repositoryURL, String repositoryLocalDirectory) {
+    public Git(String rootDirectoryPath, String workingDirectoryPath, String repositoryURL) {
 
-        java.io.File repositoryLocalDirectoryAsFile = new java.io.File(repositoryLocalDirectory);
-        ExternalApplication git = new ExternalApplication("git", workingDirectory);
+        File workingDirectory = new File(workingDirectoryPath);
 
-        if (!repositoryLocalDirectoryAsFile.isDirectory())
-            git.execute("clone", "--quiet", repositoryURL, repositoryLocalDirectory);
+        if (!workingDirectory.isDirectory()) {
 
-        this.gitApplication = new ExternalApplication("git", repositoryLocalDirectory);
+            ExternalApplication git = new ExternalApplication("git", rootDirectoryPath);
+            git.execute("clone", "--quiet", repositoryURL, workingDirectoryPath);
+        }
+
+        this.gitApplication = new ExternalApplication("git", workingDirectoryPath);
     }
 
     public Git(String workingDirectory) {
-
         this.gitApplication = new ExternalApplication("git", workingDirectory);
     }
+
+    public int getLOCMetric(String fileHash) {
+
+        ExternalApplicationOutputLinesCounter gitOutputReader = new ExternalApplicationOutputLinesCounter();
+
+        this.gitApplication.executeWithOutputRedirection(gitOutputReader, "cat-file", "-p", fileHash);
+
+        return gitOutputReader.output;
+    }
+
 
     @Override
     public Commit getCommitByTag(String tag) {
 
-        Commit output = null;
         OneLineReader gitOutputReader = new OneLineReader();
 
         this.gitApplication.execute(gitOutputReader, "show-ref", "-s", tag);
 
         if (gitOutputReader.output != null)
 
-            output = getCommitByHash(gitOutputReader.output);
+            return getCommitByHash(gitOutputReader.output);
 
         else {
 
@@ -49,22 +61,20 @@ public class Git implements VersionControlSystem {
             this.gitApplication.execute(reader, "tag");
 
             for (String outputTag : reader.output)
-                if (outputTag.contains(tag)) {
+                if (outputTag.contains(tag))
+                    return getCommitByTag(outputTag);
 
-                    output = getCommitByTag(outputTag);
-                    break;
-                }
         }
 
-        return output;
+        return null;
     }
 
     @Override
-    public Commit getCommitByDate(LocalDateTime releaseDate) {
+    public Commit getCommitByDate(LocalDateTime date) {
 
         GitCommitGetter gitOutputReader = new GitCommitGetter();
 
-        this.gitApplication.execute(gitOutputReader, "log", "--date=iso-strict", "--before=" + releaseDate.toString(), "--max-count=1", "--pretty=format:\"%H<->%cd\"");
+        this.gitApplication.execute(gitOutputReader, "log", "--date=iso-strict", "--before=" + date.toString(), "--max-count=1", "--pretty=format:\"%H<->%cd\"");
 
         return gitOutputReader.output;
     }
@@ -80,7 +90,7 @@ public class Git implements VersionControlSystem {
     }
 
     @Override
-    public List<File> getCommitFiles(String commitHash) {
+    public Map<String, ReleaseFile> getFiles(String commitHash) {
 
         GitFilesGetter gitOutputReader = new GitFilesGetter();
 
@@ -100,17 +110,17 @@ public class Git implements VersionControlSystem {
     }
 
     @Override
-    public void computeFileMetrics(File releaseFile, Commit releaseCommit) {
+    public void computeFileMetrics(ReleaseFile file, Commit releaseCommit) {
 
-        List<String> fileRevisionsHashList = this.getFileRevisionsHash(releaseFile.name, releaseCommit.hash);
+        List<String> fileRevisionsHashList = this.getFileRevisionsHash((String) file.getMetadataValue(MetadataType.NAME), releaseCommit.hash);
 
-        releaseFile.metadata.put(FileMetadata.NUMBER_OF_REVISIONS, fileRevisionsHashList.size());
+        file.setMetadataValue(MetadataType.NUMBER_OF_REVISIONS, fileRevisionsHashList.size());
 
-        computeFileLOCMetric(releaseFile);
-        computeLOCMetrics(releaseFile, releaseCommit);
-        computeFileAgeMetrics(releaseFile, releaseCommit);
-        computeNumberOfAuthorsOfFile(releaseFile, releaseCommit);
-        computeChangeSetSizeMetrics(releaseFile, releaseCommit, fileRevisionsHashList);
+        //computeFileLOCMetric(file);
+        computeLOCMetrics(file, releaseCommit);
+        computeFileAgeMetrics(file, releaseCommit);
+        computeNumberOfAuthorsOfFile(file, releaseCommit);
+        computeChangeSetSizeMetrics(file, releaseCommit, fileRevisionsHashList);
     }
 
     private Commit getCommitByHash(String commitHash) {
@@ -134,38 +144,30 @@ public class Git implements VersionControlSystem {
         return gitOutputReader.output;
     }
 
-    private void computeFileAgeMetrics(File releaseFile, Commit releaseCommit) {
+    private void computeFileAgeMetrics(ReleaseFile releaseFile, Commit releaseCommit) {
 
         GitFileWeekAgeGetter gitOutputReader = new GitFileWeekAgeGetter(releaseCommit.date);
 
-        this.gitApplication.execute(gitOutputReader, "log", releaseCommit.hash, "--reverse", "--max-count=1", "--date=iso-strict", "--pretty=format:\"%cd\"", "--", releaseFile.name);
+        this.gitApplication.execute(gitOutputReader, "log", releaseCommit.hash, "--reverse", "--max-count=1", "--date=iso-strict", "--pretty=format:\"%cd\"", "--", releaseFile.getName());
 
         double ageInWeeks = gitOutputReader.output;
-        long LOCTouched = (long) releaseFile.metadata.get(FileMetadata.LOCTouched);
+        long LOCTouched = (long) releaseFile.getMetadataValue(MetadataType.LOCTouched);
 
-        releaseFile.metadata.put(FileMetadata.AGE_IN_WEEKS, gitOutputReader.output);
-        releaseFile.metadata.put(FileMetadata.WEIGHTED_AGE_IN_WEEKS, ageInWeeks / LOCTouched);
+        releaseFile.setMetadataValue(MetadataType.AGE_IN_WEEKS, gitOutputReader.output);
+        releaseFile.setMetadataValue(MetadataType.WEIGHTED_AGE_IN_WEEKS, ageInWeeks / LOCTouched);
     }
 
-    private void computeNumberOfAuthorsOfFile(File releaseFile, Commit releaseCommit) {
+    private void computeNumberOfAuthorsOfFile(ReleaseFile releaseFile, Commit releaseCommit) {
 
         ExternalApplicationOutputLinesCounter gitOutputReader = new ExternalApplicationOutputLinesCounter();
 
-        this.gitApplication.execute(gitOutputReader, "shortlog", releaseCommit.hash, "-s", "--", releaseFile.name);
+        this.gitApplication.execute(gitOutputReader, "shortlog", releaseCommit.hash, "-s", "--", releaseFile.getName());
 
-        releaseFile.metadata.put(FileMetadata.NUMBER_OF_AUTHORS, gitOutputReader.output);
+        releaseFile.setMetadataValue(MetadataType.NUMBER_OF_AUTHORS, gitOutputReader.output);
     }
 
-    private void computeFileLOCMetric(File releaseFile) {
 
-        ExternalApplicationOutputLinesCounter gitOutputReader = new ExternalApplicationOutputLinesCounter();
-
-        this.gitApplication.executeWithOutputRedirection(gitOutputReader, "cat-file", "-p", releaseFile.hash);
-
-        releaseFile.metadata.put(FileMetadata.LOC, gitOutputReader.output);
-    }
-
-    private void computeChangeSetSizeMetrics(File releaseFile, Commit releaseCommit, List<String> fileRevisionsList) {
+    private void computeChangeSetSizeMetrics(ReleaseFile releaseFile, Commit releaseCommit, List<String> fileRevisionsList) {
 
         long changeSetSize = 0;
         long maxChangeSetSize = 0;
@@ -186,12 +188,12 @@ public class Git implements VersionControlSystem {
 
         averageChangeSetSize /= fileRevisionsList.size();
 
-        releaseFile.metadata.put(FileMetadata.CHANGE_SET_SIZE, changeSetSize);
-        releaseFile.metadata.put(FileMetadata.AVERAGE_CHANGE_SET_SIZE, averageChangeSetSize);
-        releaseFile.metadata.put(FileMetadata.MAX_CHANGE_SET_SIZE, maxChangeSetSize);
+        releaseFile.setMetadataValue(MetadataType.CHANGE_SET_SIZE, changeSetSize);
+        releaseFile.setMetadataValue(MetadataType.AVERAGE_CHANGE_SET_SIZE, averageChangeSetSize);
+        releaseFile.setMetadataValue(MetadataType.MAX_CHANGE_SET_SIZE, maxChangeSetSize);
     }
 
-    private void computeLOCMetrics(File releaseFile, Commit releaseCommit) {
+    private void computeLOCMetrics(ReleaseFile releaseFile, Commit releaseCommit) {
 
         long addedCodeLines = 0;
         long removedCodeLines = 0;
@@ -202,7 +204,7 @@ public class Git implements VersionControlSystem {
 
         ExternalApplicationOutputListMaker gitOutputReader = new ExternalApplicationOutputListMaker();
 
-        this.gitApplication.executeWithOutputRedirection(gitOutputReader, "log", "--follow", "--pretty=format:'%H<->%cd'", "--stat", releaseCommit.hash, "--", releaseFile.name);
+        this.gitApplication.executeWithOutputRedirection(gitOutputReader, "log", "--follow", "--pretty=format:'%H<->%cd'", "--stat", releaseCommit.hash, "--", releaseFile.getName());
 
         List<String> gitOutput = gitOutputReader.output;
 
@@ -240,17 +242,17 @@ public class Git implements VersionControlSystem {
                 maxLOCAdded = insertions;
         }
 
-        int numberOfRevision = (int) releaseFile.metadata.get(FileMetadata.NUMBER_OF_REVISIONS);
+        int numberOfRevision = (int) releaseFile.getMetadataValue(MetadataType.NUMBER_OF_REVISIONS);
 
-        releaseFile.metadata.put(FileMetadata.LOCTouched, addedCodeLines + removedCodeLines + modifiedCodeLines);
+        releaseFile.setMetadataValue(MetadataType.LOCTouched, addedCodeLines + removedCodeLines + modifiedCodeLines);
 
-        releaseFile.metadata.put(FileMetadata.LOC_ADDED, addedCodeLines);
-        releaseFile.metadata.put(FileMetadata.MAX_LOC_ADDED, maxLOCAdded);
-        releaseFile.metadata.put(FileMetadata.AVERAGE_LOC_ADDED, addedCodeLines / numberOfRevision);
+        releaseFile.setMetadataValue(MetadataType.LOC_ADDED, addedCodeLines);
+        releaseFile.setMetadataValue(MetadataType.MAX_LOC_ADDED, maxLOCAdded);
+        releaseFile.setMetadataValue(MetadataType.AVERAGE_LOC_ADDED, addedCodeLines / numberOfRevision);
 
-        releaseFile.metadata.put(FileMetadata.CHURN, addedCodeLines - removedCodeLines);
-        releaseFile.metadata.put(FileMetadata.MAX_CHURN, maxChurn);
-        releaseFile.metadata.put(FileMetadata.AVERAGE_CHURN, (addedCodeLines - removedCodeLines) / numberOfRevision);
+        releaseFile.setMetadataValue(MetadataType.CHURN, addedCodeLines - removedCodeLines);
+        releaseFile.setMetadataValue(MetadataType.MAX_CHURN, maxChurn);
+        releaseFile.setMetadataValue(MetadataType.AVERAGE_CHURN, (addedCodeLines - removedCodeLines) / numberOfRevision);
     }
 
     private long getChangeSetSize(String commitHash) {
