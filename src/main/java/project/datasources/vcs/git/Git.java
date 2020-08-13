@@ -28,20 +28,6 @@ public class Git implements VersionControlSystem {
         this.gitApplication = new ExternalApplication("git", workingDirectoryPath);
     }
 
-    public Git(String workingDirectory) {
-        this.gitApplication = new ExternalApplication("git", workingDirectory);
-    }
-
-    public int getLOCMetric(String fileHash) {
-
-        ExternalApplicationOutputLinesCounter gitOutputReader = new ExternalApplicationOutputLinesCounter();
-
-        this.gitApplication.executeWithOutputRedirection(gitOutputReader, "cat-file", "-p", fileHash);
-
-        return gitOutputReader.output;
-    }
-
-
     @Override
     public Commit getCommitByTag(String tag) {
 
@@ -49,9 +35,9 @@ public class Git implements VersionControlSystem {
 
         this.gitApplication.execute(gitOutputReader, "show-ref", "-s", tag);
 
-        if (gitOutputReader.output != null)
+        if (gitOutputReader.getOutput() != null)
 
-            return getCommitByHash(gitOutputReader.output);
+            return getCommitByHash(gitOutputReader.getOutput());
 
         else {
 
@@ -115,11 +101,20 @@ public class Git implements VersionControlSystem {
 
         file.setMetadata(MetadataType.NUMBER_OF_REVISIONS, fileRevisionsHashList.size());
 
-        //computeFileLOCMetric(file);
+        computeFileLOCMetric(file);
         computeLOCMetrics(file, releaseCommit);
         computeFileAgeMetrics(file, releaseCommit);
         computeNumberOfAuthorsOfFile(file, releaseCommit);
         computeChangeSetSizeMetrics(file, releaseCommit, fileRevisionsHashList);
+    }
+
+    public void computeFileLOCMetric(File file) {
+
+        ExternalApplicationOutputLinesCounter gitOutputReader = new ExternalApplicationOutputLinesCounter();
+
+        this.gitApplication.executeWithOutputRedirection(gitOutputReader, "cat-file", "-p", file.getHash());
+
+        file.setMetadata(MetadataType.LOC, gitOutputReader.getOutput());
     }
 
     private Commit getCommitByHash(String commitHash) {
@@ -162,7 +157,7 @@ public class Git implements VersionControlSystem {
 
         this.gitApplication.execute(gitOutputReader, "shortlog", releaseCommit.hash, "-s", "--", file.getName());
 
-        file.setMetadata(MetadataType.NUMBER_OF_AUTHORS, gitOutputReader.output);
+        file.setMetadata(MetadataType.NUMBER_OF_AUTHORS, gitOutputReader.getOutput());
     }
 
 
@@ -260,6 +255,6 @@ public class Git implements VersionControlSystem {
 
         this.gitApplication.executeWithOutputRedirection(gitOutputReader, "diff-tree", "--no-commit-id", "--name-only", "-r", commitHash);
 
-        return gitOutputReader.output - 1;
+        return gitOutputReader.getOutput() - 1;
     }
 }

@@ -2,8 +2,8 @@ package utilis.external;
 
 public class OneLineReader implements ExternalApplicationOutputReader {
 
-    public String output;
-    boolean stopReading = false;
+    private String output;
+    private boolean stopReading = false;
 
     @Override
     public void readOutputLine(String input) {
@@ -15,5 +15,9 @@ public class OneLineReader implements ExternalApplicationOutputReader {
     @Override
     public boolean isOutputReadingTerminated() {
         return this.stopReading;
+    }
+
+    public String getOutput() {
+        return output;
     }
 }

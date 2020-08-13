@@ -83,12 +83,13 @@ public class ExternalApplication {
             bufferedReader.close();
             process.destroy();
 
-            if (outputRedirection)
-                if (!temporaryFile.delete()) {
+            if (outputRedirection && !temporaryFile.delete()) {
 
-                    Logger.getLogger(this.name).severe(readErrors(process));
-                    System.exit(1);
-                }
+                String errorString = readErrors(process);
+
+                Logger.getLogger(this.name).severe(errorString);
+                System.exit(1);
+            }
 
         } catch (Exception e) {
 

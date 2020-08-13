@@ -36,4 +36,8 @@ public class File extends MetadataProvider {
     public String getName() {
         return (String) this.getMetadata(MetadataType.NAME);
     }
+
+    public String getHash() {
+        return (String) this.getMetadata(MetadataType.HASH);
+    }
 }

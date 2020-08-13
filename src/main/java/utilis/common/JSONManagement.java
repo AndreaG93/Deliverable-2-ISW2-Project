@@ -21,11 +21,14 @@ public class JSONManagement {
         JSONObject output = null;
 
         InputStream inputStream = null;
+        InputStreamReader inputStreamReader = null;
         BufferedReader bufferedReader = null;
+
 
         try {
             inputStream = new URL(url).openStream();
-            bufferedReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+            inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+            bufferedReader = new BufferedReader(inputStreamReader);
 
             String jsonText = readAll(bufferedReader);
             output = new JSONObject(jsonText);
@@ -37,6 +40,7 @@ public class JSONManagement {
         } finally {
 
             ResourceManagement.close(bufferedReader);
+            ResourceManagement.close(inputStreamReader);
             ResourceManagement.close(inputStream);
         }
 

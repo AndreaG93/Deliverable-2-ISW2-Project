@@ -2,7 +2,7 @@ package utilis.external;
 
 public class ExternalApplicationOutputLinesCounter implements ExternalApplicationOutputReader {
 
-    public int output;
+    private int output;
 
     public ExternalApplicationOutputLinesCounter() {
         this.output = 0;
@@ -16,5 +16,9 @@ public class ExternalApplicationOutputLinesCounter implements ExternalApplicatio
     @Override
     public boolean isOutputReadingTerminated() {
         return false;
+    }
+
+    public int getOutput() {
+        return output;
     }
 }
