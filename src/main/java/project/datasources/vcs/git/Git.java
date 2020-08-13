@@ -14,7 +14,9 @@ import java.util.Map;
 
 public class Git implements VersionControlSystem {
 
+    private static final String ISO_DATE = "--date=iso-strict";
     private final ExternalApplication gitApplication;
+
 
     public Git(String rootDirectoryPath, String workingDirectoryPath, String repositoryURL) {
 
@@ -60,7 +62,7 @@ public class Git implements VersionControlSystem {
 
         GitCommitGetter gitOutputReader = new GitCommitGetter();
 
-        this.gitApplication.execute(gitOutputReader, "log", "--date=iso-strict", "--before=" + date.toString(), "--max-count=1", "--pretty=format:\"%H<->%cd\"");
+        this.gitApplication.execute(gitOutputReader, "log", ISO_DATE, "--before=" + date.toString(), "--max-count=1", "--pretty=format:\"%H<->%cd\"");
 
         return gitOutputReader.output;
     }
@@ -70,7 +72,7 @@ public class Git implements VersionControlSystem {
 
         GitCommitGetter gitOutputReader = new GitCommitGetter();
 
-        this.gitApplication.execute(gitOutputReader, "log", "--date=iso-strict", "--grep=\"" + pattern + "\"", "--max-count=1", "--pretty=format:\"%H<->%cd\"");
+        this.gitApplication.execute(gitOutputReader, "log", ISO_DATE, "--grep=\"" + pattern + "\"", "--max-count=1", "--pretty=format:\"%H<->%cd\"");
 
         return gitOutputReader.output;
     }
@@ -142,7 +144,7 @@ public class Git implements VersionControlSystem {
 
         ExternalApplicationOutputListMaker gitOutputReader = new ExternalApplicationOutputListMaker();
 
-        this.gitApplication.execute(gitOutputReader, "show", "--date=iso-strict", "--format=\"%cd\"", "-s", commitHash);
+        this.gitApplication.execute(gitOutputReader, "show", ISO_DATE, "--format=\"%cd\"", "-s", commitHash);
 
         List<String> gitOutput = gitOutputReader.output;
         LocalDateTime commitLocalDateTime = LocalDateTime.parse(gitOutput.get(gitOutput.size() - 1), DateTimeFormatter.ISO_OFFSET_DATE_TIME);
@@ -163,16 +165,15 @@ public class Git implements VersionControlSystem {
 
         ExternalApplicationOutputListMaker gitOutputReader = new ExternalApplicationOutputListMaker();
 
-        this.gitApplication.execute(gitOutputReader, "log", releaseCommit.hash, "--date=iso-strict", "--pretty=format:\"%cd\"", "--", file.getName());
+        this.gitApplication.execute(gitOutputReader, "log", releaseCommit.hash, ISO_DATE, "--pretty=format:\"%cd\"", "--", file.getName());
 
         String creationDateAsString = gitOutputReader.output.get(gitOutputReader.output.size() - 1);
         LocalDateTime creationDate = LocalDateTime.parse(creationDateAsString, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
 
         double ageInWeeks = Duration.between(creationDate, releaseCommit.date).toDays() / 7.0;
-        long LOCTouched = (long) file.getMetadata(MetadataType.LOC_TOUCHED);
 
         file.setMetadata(MetadataType.AGE_IN_WEEKS, ageInWeeks);
-        file.setMetadata(MetadataType.WEIGHTED_AGE_IN_WEEKS, ageInWeeks / LOCTouched);
+        file.setMetadata(MetadataType.WEIGHTED_AGE_IN_WEEKS, ageInWeeks / (long) file.getMetadata(MetadataType.LOC_TOUCHED));
     }
 
     private void computeNumberOfAuthorsOfFile(File file, Commit releaseCommit) {

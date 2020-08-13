@@ -3,10 +3,7 @@ package utilis.common;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
@@ -39,9 +36,27 @@ public class JSONManagement {
             System.exit(e.hashCode());
         } finally {
 
-            ResourceManagement.close(bufferedReader);
-            ResourceManagement.close(inputStreamReader);
-            ResourceManagement.close(inputStream);
+            if (bufferedReader != null) {
+                try {
+                    bufferedReader.close();
+                } catch (IOException x) {
+                    Logger.getLogger(JSONManagement.class.getName()).severe(x.getMessage());
+                } finally {
+
+                    try {
+                        inputStreamReader.close();
+                    } catch (IOException x) {
+                        Logger.getLogger(JSONManagement.class.getName()).severe(x.getMessage());
+                    } finally {
+
+                        try {
+                            inputStream.close();
+                        } catch (IOException x) {
+                            Logger.getLogger(JSONManagement.class.getName()).severe(x.getMessage());
+                        }
+                    }
+                }
+            }
         }
 
         return output;
