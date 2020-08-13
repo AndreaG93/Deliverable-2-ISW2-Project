@@ -150,7 +150,7 @@ public class Git implements VersionControlSystem {
         this.gitApplication.execute(gitOutputReader, "log", releaseCommit.hash, "--reverse", "--max-count=1", "--date=iso-strict", "--pretty=format:\"%cd\"", "--", file.getName());
 
         double ageInWeeks = gitOutputReader.output;
-        long LOCTouched = (long) file.getMetadata(MetadataType.LOCTouched);
+        long LOCTouched = (long) file.getMetadata(MetadataType.LOC_TOUCHED);
 
         file.setMetadata(MetadataType.AGE_IN_WEEKS, gitOutputReader.output);
         file.setMetadata(MetadataType.WEIGHTED_AGE_IN_WEEKS, ageInWeeks / LOCTouched);
@@ -243,7 +243,7 @@ public class Git implements VersionControlSystem {
 
         int numberOfRevision = (int) file.getMetadata(MetadataType.NUMBER_OF_REVISIONS);
 
-        file.setMetadata(MetadataType.LOCTouched, addedCodeLines + removedCodeLines + modifiedCodeLines);
+        file.setMetadata(MetadataType.LOC_TOUCHED, addedCodeLines + removedCodeLines + modifiedCodeLines);
 
         file.setMetadata(MetadataType.LOC_ADDED, addedCodeLines);
         file.setMetadata(MetadataType.MAX_LOC_ADDED, maxLOCAdded);

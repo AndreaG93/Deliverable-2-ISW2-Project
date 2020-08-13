@@ -1,7 +1,8 @@
 package project.model;
 
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Issue {
 
@@ -20,5 +21,26 @@ public class Issue {
         this.fixedVersionsIDs = fixedVersionsIDs;
 
         this.creationDate = creationDate;
+    }
+
+    public List<Integer> getUtilizableFixedVersionsIDs() {
+
+        List<Integer> output = new ArrayList<>();
+
+        for (int av : this.affectedVersionsIDs) {
+
+            boolean bugNotFixed = true;
+
+            for (int fv : this.fixedVersionsIDs)
+                if (av == fv) {
+                    bugNotFixed = false;
+                    break;
+                }
+
+            if (bugNotFixed)
+                output.add(av);
+        }
+
+        return output;
     }
 }

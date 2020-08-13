@@ -10,7 +10,7 @@ public class File extends MetadataProvider {
             MetadataType.NAME,
             MetadataType.LOC,
             MetadataType.LOC_ADDED,
-            MetadataType.LOCTouched,
+            MetadataType.LOC_TOUCHED,
             MetadataType.NUMBER_OF_REVISIONS,
             MetadataType.NUMBER_OF_AUTHORS,
             MetadataType.NUMBER_OF_FIX,

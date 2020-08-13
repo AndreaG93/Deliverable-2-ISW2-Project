@@ -1,7 +1,5 @@
 package project.model;
 
-import project.model.metadata.MetadataType;
-
 import java.time.LocalDateTime;
 import java.util.Comparator;
 

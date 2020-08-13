@@ -22,9 +22,6 @@ public class Jira implements IssueTrackingSystem {
 
     private static final String JIRA_URL = "https://issues.apache.org/jira/rest/api/2/project/";
 
-    public Jira() {
-    }
-
     public static boolean isIssueCorrectAccordingToGivenReleases(Map<Integer, Release> releasesByVersionID, Issue issue) {
 
         for (int x : issue.fixedVersionsIDs)

@@ -12,7 +12,7 @@ public enum MetadataType {
     HASH,
 
     LOC,
-    LOCTouched,
+    LOC_TOUCHED,
 
     NUMBER_OF_REVISIONS,
     NUMBER_OF_AUTHORS,

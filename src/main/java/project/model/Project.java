@@ -149,7 +149,6 @@ public class Project {
             }
         }
 
-
         this.defectiveFileProportion = proportion.getMean();
     }
 
@@ -161,19 +160,8 @@ public class Project {
 
             if (issue.affectedVersionsIDs.length > 0) {
 
-                for (int av : issue.affectedVersionsIDs) {
-
-                    boolean bugNotFixed = true;
-
-                    for (int fv : issue.fixedVersionsIDs)
-                        if (av == fv) {
-                            bugNotFixed = false;
-                            break;
-                        }
-
-                    if (bugNotFixed)
-                        affectedVersions.add(this.releasesByVersionID.get(av));
-                }
+                for (int av : issue.getUtilizableFixedVersionsIDs())
+                    affectedVersions.add(this.releasesByVersionID.get(av));
 
             } else {
 
