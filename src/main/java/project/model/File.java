@@ -19,7 +19,6 @@ public class File extends MetadataProvider {
             MetadataType.CHURN,
             MetadataType.MAX_CHURN,
             MetadataType.AVERAGE_CHURN,
-            MetadataType.CHANGE_SET_SIZE,
             MetadataType.MAX_CHANGE_SET_SIZE,
             MetadataType.AVERAGE_CHANGE_SET_SIZE,
             MetadataType.AGE_IN_WEEKS,
@@ -30,6 +29,7 @@ public class File extends MetadataProvider {
 
         this.setMetadata(MetadataType.NAME, name);
         this.setMetadata(MetadataType.HASH, hash);
+        this.setMetadata(MetadataType.NUMBER_OF_FIX, 0);
         this.setMetadata(MetadataType.IS_BUGGY, false);
     }
 

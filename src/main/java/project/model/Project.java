@@ -217,7 +217,7 @@ public class Project {
             for (Release release : affectedVersion)
                 for (String defectiveFilename : defectiveFilenameList)
                     if (Utils.isJavaFile(defectiveFilename))
-                        release.setFileAsDefective(defectiveFilename);
+                        release.setFileAsDefectiveIncrementingNumberOfFix(defectiveFilename);
         }
     }
 

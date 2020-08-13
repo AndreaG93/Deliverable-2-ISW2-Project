@@ -22,12 +22,20 @@ public class Release extends MetadataProvider {
         super();
     }
 
-    public void setFileAsDefective(String filename) {
+    public void setFileAsDefectiveIncrementingNumberOfFix(String filename) {
 
         File file = this.fileRegistry.get(filename);
-        if (file != null)
+        if (file != null) {
+
+            int numberOfFix = (int) file.getMetadata(MetadataType.NUMBER_OF_FIX);
+            numberOfFix++;
+
             file.setMetadata(MetadataType.IS_BUGGY, true);
+            file.setMetadata(MetadataType.NUMBER_OF_FIX, numberOfFix);
+        }
     }
+
+
 
     public Commit getCommit() {
         return commit;
