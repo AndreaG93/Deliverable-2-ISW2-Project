@@ -16,23 +16,23 @@ import java.util.List;
 import static utilis.common.JSONManagement.extractFieldFromJsonArray;
 import static utilis.common.JSONManagement.readJsonFromUrl;
 
-public class jira implements IssueTrackingSystem {
+public class Jira implements IssueTrackingSystem {
 
-    private static final String jiraURL = "https://issues.apache.org/jira/rest/api/2/project/";
+    private static final String JIRA_URL = "https://issues.apache.org/jira/rest/api/2/project/";
 
-    private List<Issue> issueWithoutAffectedVersions;
+    private List<Issue> issue;
     private List<Issue> issueWithAffectedVersions;
     private List<Release> releases;
 
-    public jira(String projectName) {
+    public Jira(String projectName) {
 
         collectReleases(projectName);
         collectIssues(projectName);
     }
 
     @Override
-    public List<Issue> getIssuesWithoutAffectedVersions() {
-        return this.issueWithoutAffectedVersions;
+    public List<Issue> getIssues() {
+        return this.issue;
     }
 
     @Override
@@ -49,7 +49,7 @@ public class jira implements IssueTrackingSystem {
 
         this.releases = new ArrayList<>();
 
-        String url = jiraURL + projectName.toUpperCase();
+        String url = JIRA_URL + projectName.toUpperCase();
 
         JSONArray releasesAsJsonArray = readJsonFromUrl(url).getJSONArray("versions");
 
@@ -63,12 +63,14 @@ public class jira implements IssueTrackingSystem {
         }
     }
 
-    public void collectIssues(String projectName) {
+    private void collectIssues(String projectName) {
 
-        this.issueWithoutAffectedVersions = new ArrayList<>();
+        this.issue = new ArrayList<>();
         this.issueWithAffectedVersions = new ArrayList<>();
 
-        int j, i = 0, total;
+        int j;
+        int i = 0;
+        int total;
 
         do {
 
@@ -90,11 +92,13 @@ public class jira implements IssueTrackingSystem {
 
                 Issue issue = createIssueFromJSON(issueAsJsonObject);
 
-                if (issue != null)
-                    if (issue.affectedVersionsIDs.length == 0)
-                        this.issueWithoutAffectedVersions.add(issue);
-                    else
+                if (issue != null) {
+
+                    if (issue.affectedVersionsIDs.length > 0)
                         this.issueWithAffectedVersions.add(issue);
+
+                    this.issue.add(issue);
+                }
             }
 
         } while (i < total);
@@ -104,13 +108,13 @@ public class jira implements IssueTrackingSystem {
 
         Release output = null;
 
-        if (input.has("id") && input.has("name") & input.has("releaseDate")) {
+        if (input.has("id") && input.has("name") && input.has("releaseDate")) {
 
             output = new Release();
 
-            output.setMetadataValue(MetadataType.VERSION_ID, input.getInt("id"));
-            output.setMetadataValue(MetadataType.NAME, input.getString("name"));
-            output.setMetadataValue(MetadataType.DATE, LocalDate.parse(input.getString("releaseDate")).atStartOfDay().plusHours(23).plusMinutes(59).plusSeconds(59));
+            output.setMetadata(MetadataType.VERSION_ID, input.getInt("id"));
+            output.setMetadata(MetadataType.NAME, input.getString("name"));
+            output.setMetadata(MetadataType.RELEASE_DATE, LocalDate.parse(input.getString("releaseDate")).atStartOfDay().plusHours(23).plusMinutes(59).plusSeconds(59));
         }
 
         return output;

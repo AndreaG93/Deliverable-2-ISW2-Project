@@ -8,7 +8,7 @@ public interface IssueTrackingSystem {
 
     List<Release> getReleases();
 
-    List<Issue> getIssuesWithoutAffectedVersions();
+    List<Issue> getIssues();
 
     List<Issue> getIssuesWithAffectedVersions();
 }

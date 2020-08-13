@@ -6,11 +6,10 @@ import java.util.List;
 public enum MetadataType {
 
     VERSION_ID,
+    VERSION_INDEX,
+    RELEASE_DATE,
     NAME,
     HASH,
-
-    VERSION_INDEX,
-    DATE,
 
     LOC,
     LOCTouched,

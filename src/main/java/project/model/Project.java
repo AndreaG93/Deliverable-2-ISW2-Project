@@ -1,10 +1,9 @@
 package project.model;
 
 import project.datasources.its.IssueTrackingSystem;
-import project.datasources.its.jira.jira;
+import project.datasources.its.jira.Jira;
 import project.datasources.vcs.VersionControlSystem;
 import project.datasources.vcs.git.Git;
-
 import project.model.metadata.MetadataType;
 import project.utils.ProjectDatasetBuilderThread;
 import utilis.common.ArithmeticMean;
@@ -22,15 +21,14 @@ public class Project {
     public final String name;
     private final String rootDirectory;
     private final String workingDirectory;
-
-    private List<Release> releases;
-    private Map<Integer, Release> releasesByVersionID;
-
-
     private final VersionControlSystem versionControlSystem;
     private final IssueTrackingSystem issueTrackingSystem;
 
-    private double proportion;
+    private Map<LocalDateTime, Release> releasesByReleaseDate;
+    private Map<Integer, Release> releasesByVersionID;
+    private Map<Integer, Release> releasesByIndex;
+
+    private double defectiveFileProportion;
 
     public Project(String projectName, String repositoryURL) {
 
@@ -40,93 +38,225 @@ public class Project {
         this.workingDirectory = this.rootDirectory + this.name;
 
         this.versionControlSystem = new Git(this.rootDirectory, this.workingDirectory, repositoryURL);
-        this.issueTrackingSystem = new jira(projectName);
+        this.issueTrackingSystem = new Jira(projectName);
     }
 
     public void buildProjectDataset() {
 
-        collectCommitOfEachRelease();
-        orderReleasesByReleaseDate();
-        collectFilesOfEachRelease();
+        collectReleases();
+        collectFilesBelongingToEachRelease();
+        calculateDefectiveFileProportion();
         searchForDefectiveFile();
-        //collectReleasesFilesMetadata();
+        collectFileMetadataOfEachRelease();
     }
 
     public void exportProjectDatasetAsCSV() {
 
-        FileCSV datasetCSV = new FileCSV("Dataset-" + this.name, MetadataType.convertToStringList(ReleaseFile.METADATA_FOR_DATASET));
+        FileCSV datasetCSV = new FileCSV("Dataset-" + this.name, MetadataType.convertToStringList(File.METADATA_FOR_DATASET));
         FileCSV releasesCSV = new FileCSV("Releases-" + this.name, MetadataType.convertToStringList(Release.METADATA_FOR_DATASET));
 
-        for (Release release : this.releases) {
+        for (Release release : this.releasesByReleaseDate.values()) {
 
-            releasesCSV.write(release.getMetadataValuesList(Release.METADATA_FOR_DATASET));
+            releasesCSV.write(release.getMetadataStringValues(Release.METADATA_FOR_DATASET));
 
-            for (Map.Entry<String, ReleaseFile> releaseFileEntry : release.getReleaseFiles().entrySet()) {
-
-                ReleaseFile currentReleaseFile = releaseFileEntry.getValue();
-                datasetCSV.write(currentReleaseFile.getMetadataValuesList(ReleaseFile.METADATA_FOR_DATASET));
-            }
+            for (File file : release.getFiles())
+                datasetCSV.write(file.getMetadataStringValues(File.METADATA_FOR_DATASET));
         }
 
         datasetCSV.close();
         releasesCSV.close();
     }
 
-    private void orderReleasesByReleaseDate() {
+    private List<Release> retrieveReleasesDiscardingHalfOfThem() {
 
-        this.releases.sort(new Comparator<Release>() {
-            @Override
-            public int compare(Release o1, Release o2) {
-                return o1.getReleaseCommit().date.compareTo(o2.getReleaseCommit().date);
-            }
-        });
+        List<Release> output = this.issueTrackingSystem.getReleases();
+
+        int numberOfReleaseToAnalyze = (int) Math.round(output.size() * 0.5);
+
+        while (output.size() > numberOfReleaseToAnalyze)
+            output.remove(output.size() - 1);
+
+        return output;
     }
 
-    private void collectCommitOfEachRelease() {
+    private void collectReleases() {
 
         this.releasesByVersionID = new TreeMap<>();
-        this.releases = this.issueTrackingSystem.getReleases();
+        this.releasesByReleaseDate = new TreeMap<>();
+        this.releasesByIndex = new TreeMap<>();
 
-        for (Release release : this.releases) {
+        for (Release release : retrieveReleasesDiscardingHalfOfThem()) {
 
-            String releaseTag = (String) release.getMetadataValue(MetadataType.NAME);
-            LocalDateTime releaseDate = (LocalDateTime) release.getMetadataValue(MetadataType.DATE);
+            String releaseTag = (String) release.getMetadata(MetadataType.NAME);
+            LocalDateTime releaseDate = (LocalDateTime) release.getMetadata(MetadataType.RELEASE_DATE);
 
             Commit releaseCommit = this.versionControlSystem.getCommitByTag(releaseTag);
             if (releaseCommit == null)
                 releaseCommit = this.versionControlSystem.getCommitByDate(releaseDate);
 
-            release.setReleaseCommit(releaseCommit);
+            release.setCommit(releaseCommit);
 
-            this.releasesByVersionID.put((int) release.getMetadataValue(MetadataType.VERSION_ID), release);
+            this.releasesByVersionID.put(release.getReleaseVersionID(), release);
+            this.releasesByReleaseDate.put(release.getReleaseDate(), release);
+        }
+
+        int index = 0;
+        for (Release release : this.releasesByReleaseDate.values()) {
+
+            this.releasesByIndex.put(index, release);
+            release.setVersionIndex(index);
+
+            index++;
         }
     }
 
-    private void collectFilesOfEachRelease() {
+    private boolean checkIssueUsefulness(Issue issue) {
 
-        for (Release release : this.releases) {
+        for (int x : issue.fixedVersionsIDs)
+            if (this.releasesByVersionID.get(x) == null)
+                return false;
 
-            Commit releaseCommit = release.getReleaseCommit();
+        for (int x : issue.affectedVersionsIDs)
+            if (this.releasesByVersionID.get(x) == null)
+                return false;
 
-            Map<String, ReleaseFile> releaseFiles = this.versionControlSystem.getFiles(releaseCommit.hash);
+        return true;
+    }
 
-            release.setReleaseFiles(releaseFiles);
+    private void collectFilesBelongingToEachRelease() {
+
+        for (Release release : this.releasesByReleaseDate.values()) {
+
+            Commit releaseCommit = release.getCommit();
+
+            Map<String, File> files = this.versionControlSystem.getFiles(releaseCommit.hash);
+
+            release.setFileRegistry(files);
         }
     }
 
-    private void collectFilesMetadataOfEachRelease() {
+    private void calculateDefectiveFileProportion() {
 
-        int numberOfReleaseAnalyzed = 0;
+        ArithmeticMean proportion = new ArithmeticMean();
+        List<Issue> issues = this.issueTrackingSystem.getIssuesWithAffectedVersions();
 
-        for (Release release : this.releases) {
+        for (Issue issue : issues)
+            if (checkIssueUsefulness(issue)) {
 
-            ConcurrentLinkedQueue<ReleaseFile> waitFreeQueue = new ConcurrentLinkedQueue<>(release.getReleaseFiles().values());
+                SortedSet<Release> affectedVersions = new TreeSet<>(new ReleaseComparator());
+
+                for (int affectedVersionsID : issue.affectedVersionsIDs)
+                    affectedVersions.add(this.releasesByVersionID.get(affectedVersionsID));
+
+                int fixedVersionIndex = getFixedVersionIndex(issue);
+                int openingVersionIndex = getOpeningVersionIndex(issue);
+                int introductionVersionIndex = affectedVersions.first().getVersionIndex();
+
+                if (fixedVersionIndex > openingVersionIndex) {
+
+                    double proportionPartialValue = (double) (fixedVersionIndex - introductionVersionIndex) / (fixedVersionIndex - openingVersionIndex);
+                    proportion.addValue(proportionPartialValue);
+                }
+            }
+
+
+        this.defectiveFileProportion = proportion.getMean();
+    }
+
+    private void searchForDefectiveFile() {
+
+        List<Issue> issues = this.issueTrackingSystem.getIssues();
+
+        for (Issue issue : issues)
+            if (checkIssueUsefulness(issue)) {
+
+                List<Release> affectedVersions = new ArrayList<>();
+
+                if (issue.affectedVersionsIDs.length > 0) {
+
+                    for (int av : issue.affectedVersionsIDs) {
+
+                        boolean bugNotFixed = true;
+
+                        for (int fv : issue.fixedVersionsIDs)
+                            if (av == fv) {
+                                bugNotFixed = false;
+                                break;
+                            }
+
+                        if (bugNotFixed)
+                            affectedVersions.add(this.releasesByVersionID.get(av));
+                    }
+
+                } else {
+
+                    int fixedVersionIndex = getFixedVersionIndex(issue);
+                    int openingVersionIndex = getOpeningVersionIndex(issue);
+                    int introductionVersionIndex = (int) Math.round((fixedVersionIndex - ((fixedVersionIndex - openingVersionIndex) * this.defectiveFileProportion)));
+
+                    for (int x = introductionVersionIndex; x < fixedVersionIndex; x++)
+                        affectedVersions.add(this.releasesByIndex.get(x));
+
+                }
+
+                setDefectiveFiles(affectedVersions, issue);
+            }
+    }
+
+    private int getFixedVersionIndex(Issue issue) {
+
+        SortedSet<Release> fixedReleases = new TreeSet<>(new ReleaseComparator());
+
+        for (int versionID : issue.fixedVersionsIDs)
+            fixedReleases.add(this.releasesByVersionID.get(versionID));
+
+        return fixedReleases.first().getVersionIndex();
+    }
+
+    private int getOpeningVersionIndex(Issue issue) {
+
+        int output = 0;
+        LocalDateTime issueReleaseDate = issue.creationDate;
+
+        for (Release release : this.releasesByReleaseDate.values()) {
+
+            LocalDateTime releaseDate = release.getReleaseDate();
+
+            if (releaseDate.compareTo(issueReleaseDate) < 0)
+                output++;
+            else
+                break;
+        }
+
+        return output;
+    }
+
+    private void setDefectiveFiles(Iterable<Release> affectedVersion, Issue issue) {
+
+        Commit fixCommit = this.versionControlSystem.getCommitByLogMessagePattern(issue.key);
+
+        if (fixCommit != null) {
+
+            List<String> defectiveFilenameList = this.versionControlSystem.getFilesChangedByCommit(fixCommit.hash);
+
+            for (Release release : affectedVersion)
+                for (String defectiveFilename : defectiveFilenameList)
+                    if (Utils.isJavaFile(defectiveFilename))
+                        release.setFileAsDefective(defectiveFilename);
+        }
+    }
+
+    private void collectFileMetadataOfEachRelease() {
+
+        for (Release release : this.releasesByReleaseDate.values()) {
+
+            ConcurrentLinkedQueue<File> waitFreeQueue = new ConcurrentLinkedQueue<>(release.getFiles());
 
             List<Thread> threadList = new ArrayList<>();
 
             for (int threadID = 0; threadID < 4; threadID++) {
 
-                Runnable runnable = new ProjectDatasetBuilderThread(waitFreeQueue, new Git(rootDirectory, workingDirectory, null), release.getReleaseCommit());
+                Runnable runnable = new ProjectDatasetBuilderThread(waitFreeQueue, new Git(rootDirectory, workingDirectory, null), release.getCommit());
                 Thread thread = new Thread(runnable);
 
                 thread.start();
@@ -143,121 +273,6 @@ public class Project {
                 Logger.getLogger(Project.class.getName()).severe(e.getMessage());
                 System.exit(e.hashCode());
             }
-
-            if (numberOfReleaseAnalyzed == 1)
-                break;
-            else
-                numberOfReleaseAnalyzed++;
         }
-    }
-
-    public void searchForDefectiveFile() {
-
-        searchForDefectiveFileThroughAffectedVersions();
-        searchForDefectiveFileThroughProportion();
-    }
-
-
-    private void searchForDefectiveFileThroughAffectedVersions() {
-
-        List<Issue> issues = this.issueTrackingSystem.getIssuesWithAffectedVersions();
-        ArithmeticMean arithmeticMean = new ArithmeticMean();
-
-        for (Issue issue : issues) {
-
-            SortedSet<Release> affectedVersions = new TreeSet<>(new Comparator<Release>() {
-                @Override
-                public int compare(Release o1, Release o2) {
-                    return o1.getReleaseCommit().date.compareTo(o2.getReleaseCommit().date);
-                }
-            });
-
-            for (int affectedVersionsID : issue.affectedVersionsIDs)
-                affectedVersions.add(this.releasesByVersionID.get(affectedVersionsID));
-
-
-            int fixedVersionIndex = getFixedVersionIndex(issue);
-            int openingVersionIndex = getOpeningVersionIndex(issue);
-            int introductionVersionIndex = this.releases.indexOf(affectedVersions.first());
-
-            setDefectiveFiles(affectedVersions, issue);
-
-            double proportion = (double) (fixedVersionIndex - introductionVersionIndex) / (fixedVersionIndex - openingVersionIndex);
-            arithmeticMean.addValue(proportion);
-        }
-
-        this.proportion = arithmeticMean.getMean();
-    }
-
-    private void searchForDefectiveFileThroughProportion() {
-
-        List<Issue> issues = this.issueTrackingSystem.getIssuesWithoutAffectedVersions();
-
-        for (Issue issue : issues) {
-
-            int fixedVersionIndex = getFixedVersionIndex(issue);
-            int openingVersionIndex = getOpeningVersionIndex(issue);
-            int introductionVersionIndex = (int) Math.round((fixedVersionIndex -  ((fixedVersionIndex - openingVersionIndex) * this.proportion)));
-
-            List<Release> affectedVersions = this.releases.subList(introductionVersionIndex, fixedVersionIndex);
-            setDefectiveFiles(affectedVersions, issue);
-        }
-    }
-
-    private int getFixedVersionIndex(Issue issue) {
-
-        SortedSet<Release> fixedReleases = new TreeSet<>(new Comparator<Release>() {
-            @Override
-            public int compare(Release o1, Release o2) {
-                return o1.getReleaseCommit().date.compareTo(o2.getReleaseCommit().date);
-            }
-        });
-
-        for (int versionID : issue.fixedVersionsIDs)
-            fixedReleases.add(this.releasesByVersionID.get(versionID));
-
-        return this.releases.indexOf(fixedReleases.first());
-    }
-
-    private int getOpeningVersionIndex(Issue issue) {
-
-        LocalDateTime issueReleaseDate = issue.creationDate;
-
-        for (int index = 0; index < this.releases.size(); index++) {
-
-            LocalDateTime releaseDateOfCurrentRelease = this.releases.get(index).getReleaseCommit().date;
-            if (releaseDateOfCurrentRelease.compareTo(issueReleaseDate) >= 0)
-                return index;
-        }
-
-        return 0;
-    }
-
-    private void setDefectiveFiles(Iterable<Release> affectedVersion, Issue issue) {
-
-        Commit fixCommit = this.versionControlSystem.getCommitByLogMessagePattern(issue.key);
-
-        if (fixCommit != null) {
-
-            List<String> defectiveFilenameList = this.versionControlSystem.getFilesChangedByCommit(fixCommit.hash);
-
-            for (Release release : affectedVersion)
-                for (String defectiveFilename : defectiveFilenameList)
-                    if (Utils.isJavaFile(defectiveFilename)) {
-
-                        ReleaseFile defectiveFile = release.getReleaseFiles().get(defectiveFilename);
-                        if (defectiveFile != null)
-                            defectiveFile.setMetadataValue(MetadataType.IS_BUGGY, true);
-                    }
-        }
-    }
-
-    private double calculateProportion(Release introductionVersion, Release openingVersion, Release fixedVersion) {
-
-        double iv = this.releases.indexOf(introductionVersion);
-        double ov = this.releases.indexOf(openingVersion);
-        double fv = this.releases.indexOf(fixedVersion);
-
-        return (fv - iv) / (fv - ov);
     }
 }

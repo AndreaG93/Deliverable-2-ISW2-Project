@@ -1,7 +1,7 @@
 package project.datasources.vcs;
 
 import project.model.Commit;
-import project.model.ReleaseFile;
+import project.model.File;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -15,9 +15,9 @@ public interface VersionControlSystem {
 
     Commit getCommitByLogMessagePattern(String pattern);
 
-    Map<String, ReleaseFile> getFiles(String commitHash);
+    Map<String, File> getFiles(String commitHash);
 
     List<String> getFilesChangedByCommit(String commitHash);
 
-    void computeFileMetrics(ReleaseFile releaseFile, Commit releaseCommit);
+    void computeFileMetrics(File file, Commit releaseCommit);
 }

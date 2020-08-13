@@ -1,11 +1,12 @@
 package project.model;
 
-import project.model.metadata.MetadataType;
 import project.model.metadata.MetadataProvider;
+import project.model.metadata.MetadataType;
 
-public class ReleaseFile extends MetadataProvider {
+public class File extends MetadataProvider {
 
     public static final MetadataType[] METADATA_FOR_DATASET = {
+            MetadataType.VERSION_INDEX,
             MetadataType.NAME,
             MetadataType.LOC,
             MetadataType.LOC_ADDED,
@@ -22,22 +23,17 @@ public class ReleaseFile extends MetadataProvider {
             MetadataType.MAX_CHANGE_SET_SIZE,
             MetadataType.AVERAGE_CHANGE_SET_SIZE,
             MetadataType.AGE_IN_WEEKS,
-            MetadataType.WEIGHTED_AGE_IN_WEEKS,};
+            MetadataType.WEIGHTED_AGE_IN_WEEKS,
+            MetadataType.IS_BUGGY};
 
-    public ReleaseFile(String name, String hash) {
+    public File(String name, String hash) {
 
-        super();
-
-        this.setMetadataValue(MetadataType.NAME, name);
-        this.setMetadataValue(MetadataType.HASH, hash);
-        this.setMetadataValue(MetadataType.IS_BUGGY, false);
+        this.setMetadata(MetadataType.NAME, name);
+        this.setMetadata(MetadataType.HASH, hash);
+        this.setMetadata(MetadataType.IS_BUGGY, false);
     }
 
     public String getName() {
-        return (String) getMetadataValue(MetadataType.NAME);
-    }
-
-    public String getHash() {
-        return (String) getMetadataValue(MetadataType.HASH);
+        return (String) this.getMetadata(MetadataType.NAME);
     }
 }
