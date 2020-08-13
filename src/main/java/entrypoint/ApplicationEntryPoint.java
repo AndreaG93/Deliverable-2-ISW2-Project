@@ -16,7 +16,7 @@ public class ApplicationEntryPoint {
 
         List<Project> projects = new ArrayList<>();
         projects.add(new Bookkeeper());
-        //projects.add(new OpenJPA());
+        projects.add(new OpenJPA());
 
         for (Project project : projects) {
 

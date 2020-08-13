@@ -2,6 +2,7 @@ package project.datasources.its.jira;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import project.datasources.its.IssueRegistry;
 import project.datasources.its.IssueTrackingSystem;
 import project.model.Issue;
 import project.model.Release;
@@ -12,6 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static utilis.common.JSONManagement.extractFieldFromJsonArray;
 import static utilis.common.JSONManagement.readJsonFromUrl;
@@ -20,34 +22,26 @@ public class Jira implements IssueTrackingSystem {
 
     private static final String JIRA_URL = "https://issues.apache.org/jira/rest/api/2/project/";
 
-    private List<Issue> issue;
-    private List<Issue> issueWithAffectedVersions;
-    private List<Release> releases;
+    public Jira() {
+    }
 
-    public Jira(String projectName) {
+    public static boolean isIssueCorrectAccordingToGivenReleases(Map<Integer, Release> releasesByVersionID, Issue issue) {
 
-        collectReleases(projectName);
-        collectIssues(projectName);
+        for (int x : issue.fixedVersionsIDs)
+            if (releasesByVersionID.get(x) == null)
+                return false;
+
+        for (int x : issue.affectedVersionsIDs)
+            if (releasesByVersionID.get(x) == null)
+                return false;
+
+        return true;
     }
 
     @Override
-    public List<Issue> getIssues() {
-        return this.issue;
-    }
+    public List<Release> getReleases(String projectName) {
 
-    @Override
-    public List<Issue> getIssuesWithAffectedVersions() {
-        return this.issueWithAffectedVersions;
-    }
-
-    @Override
-    public List<Release> getReleases() {
-        return this.releases;
-    }
-
-    private void collectReleases(String projectName) {
-
-        this.releases = new ArrayList<>();
+        List<Release> output = new ArrayList<>();
 
         String url = JIRA_URL + projectName.toUpperCase();
 
@@ -59,14 +53,17 @@ public class Jira implements IssueTrackingSystem {
             Release release = createReleaseFromJSON(releaseAsJsonObject);
 
             if (release != null)
-                this.releases.add(release);
+                output.add(release);
         }
+
+        return output;
     }
 
-    private void collectIssues(String projectName) {
+    @Override
+    public IssueRegistry getIssuesRegistry(String projectName, Map<Integer, Release> releasesByVersionID) {
 
-        this.issue = new ArrayList<>();
-        this.issueWithAffectedVersions = new ArrayList<>();
+        List<Issue> issues = new ArrayList<>();
+        List<Issue> issueWithAffectedVersions = new ArrayList<>();
 
         int j;
         int i = 0;
@@ -90,18 +87,20 @@ public class Jira implements IssueTrackingSystem {
 
                 JSONObject issueAsJsonObject = issuesAsJsonArray.getJSONObject(i % 1000);
 
-                Issue issue = createIssueFromJSON(issueAsJsonObject);
+                Issue newIssue = createIssueFromJSON(issueAsJsonObject);
 
-                if (issue != null) {
+                if (newIssue != null && isIssueCorrectAccordingToGivenReleases(releasesByVersionID, newIssue)) {
 
-                    if (issue.affectedVersionsIDs.length > 0)
-                        this.issueWithAffectedVersions.add(issue);
+                    if (newIssue.affectedVersionsIDs.length > 0)
+                        issueWithAffectedVersions.add(newIssue);
 
-                    this.issue.add(issue);
+                    issues.add(newIssue);
                 }
             }
 
         } while (i < total);
+
+        return new IssueRegistry(issues, issueWithAffectedVersions);
     }
 
     private Release createReleaseFromJSON(JSONObject input) {

@@ -1,5 +1,6 @@
 package project.model;
 
+import project.datasources.its.IssueRegistry;
 import project.datasources.its.IssueTrackingSystem;
 import project.datasources.its.jira.Jira;
 import project.datasources.vcs.VersionControlSystem;
@@ -38,15 +39,19 @@ public class Project {
         this.workingDirectory = this.rootDirectory + this.name;
 
         this.versionControlSystem = new Git(this.rootDirectory, this.workingDirectory, repositoryURL);
-        this.issueTrackingSystem = new Jira(projectName);
+        this.issueTrackingSystem = new Jira();
     }
 
     public void buildProjectDataset() {
 
         collectReleases();
         collectFilesBelongingToEachRelease();
-        calculateDefectiveFileProportion();
-        searchForDefectiveFile();
+
+        IssueRegistry issueRegistry = this.issueTrackingSystem.getIssuesRegistry(this.name, this.releasesByVersionID);
+
+        calculateDefectiveFileProportion(issueRegistry.issuesWithAffectedVersions);
+        searchForDefectiveFile(issueRegistry.issues);
+
         collectFileMetadataOfEachRelease();
     }
 
@@ -69,7 +74,7 @@ public class Project {
 
     private List<Release> retrieveReleasesDiscardingHalfOfThem() {
 
-        List<Release> output = this.issueTrackingSystem.getReleases();
+        List<Release> output = this.issueTrackingSystem.getReleases(this.name);
 
         int numberOfReleaseToAnalyze = (int) Math.round(output.size() * 0.5);
 
@@ -110,19 +115,6 @@ public class Project {
         }
     }
 
-    private boolean checkIssueUsefulness(Issue issue) {
-
-        for (int x : issue.fixedVersionsIDs)
-            if (this.releasesByVersionID.get(x) == null)
-                return false;
-
-        for (int x : issue.affectedVersionsIDs)
-            if (this.releasesByVersionID.get(x) == null)
-                return false;
-
-        return true;
-    }
-
     private void collectFilesBelongingToEachRelease() {
 
         for (Release release : this.releasesByReleaseDate.values()) {
@@ -135,72 +127,67 @@ public class Project {
         }
     }
 
-    private void calculateDefectiveFileProportion() {
+    private void calculateDefectiveFileProportion(List<Issue> issues) {
 
         ArithmeticMean proportion = new ArithmeticMean();
-        List<Issue> issues = this.issueTrackingSystem.getIssuesWithAffectedVersions();
 
-        for (Issue issue : issues)
-            if (checkIssueUsefulness(issue)) {
+        for (Issue issue : issues) {
 
-                SortedSet<Release> affectedVersions = new TreeSet<>(new ReleaseComparator());
+            SortedSet<Release> affectedVersions = new TreeSet<>(new ReleaseComparator());
 
-                for (int affectedVersionsID : issue.affectedVersionsIDs)
-                    affectedVersions.add(this.releasesByVersionID.get(affectedVersionsID));
+            for (int affectedVersionsID : issue.affectedVersionsIDs)
+                affectedVersions.add(this.releasesByVersionID.get(affectedVersionsID));
 
-                int fixedVersionIndex = getFixedVersionIndex(issue);
-                int openingVersionIndex = getOpeningVersionIndex(issue);
-                int introductionVersionIndex = affectedVersions.first().getVersionIndex();
+            int fixedVersionIndex = getFixedVersionIndex(issue);
+            int openingVersionIndex = getOpeningVersionIndex(issue);
+            int introductionVersionIndex = affectedVersions.first().getVersionIndex();
 
-                if (fixedVersionIndex > openingVersionIndex) {
+            if (fixedVersionIndex > openingVersionIndex) {
 
-                    double proportionPartialValue = (double) (fixedVersionIndex - introductionVersionIndex) / (fixedVersionIndex - openingVersionIndex);
-                    proportion.addValue(proportionPartialValue);
-                }
+                double proportionPartialValue = (double) (fixedVersionIndex - introductionVersionIndex) / (fixedVersionIndex - openingVersionIndex);
+                proportion.addValue(proportionPartialValue);
             }
+        }
 
 
         this.defectiveFileProportion = proportion.getMean();
     }
 
-    private void searchForDefectiveFile() {
+    private void searchForDefectiveFile(List<Issue> issues) {
 
-        List<Issue> issues = this.issueTrackingSystem.getIssues();
+        for (Issue issue : issues) {
 
-        for (Issue issue : issues)
-            if (checkIssueUsefulness(issue)) {
+            List<Release> affectedVersions = new ArrayList<>();
 
-                List<Release> affectedVersions = new ArrayList<>();
+            if (issue.affectedVersionsIDs.length > 0) {
 
-                if (issue.affectedVersionsIDs.length > 0) {
+                for (int av : issue.affectedVersionsIDs) {
 
-                    for (int av : issue.affectedVersionsIDs) {
+                    boolean bugNotFixed = true;
 
-                        boolean bugNotFixed = true;
+                    for (int fv : issue.fixedVersionsIDs)
+                        if (av == fv) {
+                            bugNotFixed = false;
+                            break;
+                        }
 
-                        for (int fv : issue.fixedVersionsIDs)
-                            if (av == fv) {
-                                bugNotFixed = false;
-                                break;
-                            }
-
-                        if (bugNotFixed)
-                            affectedVersions.add(this.releasesByVersionID.get(av));
-                    }
-
-                } else {
-
-                    int fixedVersionIndex = getFixedVersionIndex(issue);
-                    int openingVersionIndex = getOpeningVersionIndex(issue);
-                    int introductionVersionIndex = (int) Math.round((fixedVersionIndex - ((fixedVersionIndex - openingVersionIndex) * this.defectiveFileProportion)));
-
-                    for (int x = introductionVersionIndex; x < fixedVersionIndex; x++)
-                        affectedVersions.add(this.releasesByIndex.get(x));
-
+                    if (bugNotFixed)
+                        affectedVersions.add(this.releasesByVersionID.get(av));
                 }
 
-                setDefectiveFiles(affectedVersions, issue);
+            } else {
+
+                int fixedVersionIndex = getFixedVersionIndex(issue);
+                int openingVersionIndex = getOpeningVersionIndex(issue);
+                int introductionVersionIndex = (int) Math.round((fixedVersionIndex - ((fixedVersionIndex - openingVersionIndex) * this.defectiveFileProportion)));
+
+                for (int x = introductionVersionIndex; x < fixedVersionIndex; x++)
+                    affectedVersions.add(this.releasesByIndex.get(x));
+
             }
+
+            setDefectiveFiles(affectedVersions, issue);
+        }
     }
 
     private int getFixedVersionIndex(Issue issue) {
