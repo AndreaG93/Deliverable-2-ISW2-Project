@@ -98,16 +98,7 @@ public class ExternalApplication {
         }
     }
 
-    public boolean isCleanUp(File file) {
-
-        boolean output = false;
-
-        try {
-            output = file.delete();
-        } catch (Exception e) {
-            Logger.getLogger(this.name).severe(e.getMessage());
-        }
-
-        return output;
+    public boolean isCleanUp(File file) throws IOException {
+        return file.delete();
     }
 }
