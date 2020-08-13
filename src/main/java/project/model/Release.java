@@ -9,7 +9,7 @@ import java.util.Map;
 
 public class Release extends MetadataProvider {
 
-    public static final MetadataType[] METADATA_FOR_DATASET = {
+    private static final MetadataType[] METADATA_FOR_DATASET = {
             MetadataType.VERSION_INDEX,
             MetadataType.VERSION_ID,
             MetadataType.NAME,
@@ -72,5 +72,9 @@ public class Release extends MetadataProvider {
 
     public int getVersionIndex() {
         return (int) this.getMetadata(MetadataType.VERSION_INDEX);
+    }
+
+    public static MetadataType[] getMetadataTypesForDataset() {
+        return METADATA_FOR_DATASET;
     }
 }

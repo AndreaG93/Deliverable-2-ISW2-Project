@@ -83,7 +83,7 @@ public class ExternalApplication {
             bufferedReader.close();
             process.destroy();
 
-            if (outputRedirection && !temporaryFile.delete()) {
+            if (outputRedirection && !isCleanUp(temporaryFile)) {
 
                 String errorString = readErrors(process);
 
@@ -91,10 +91,23 @@ public class ExternalApplication {
                 System.exit(1);
             }
 
-        } catch (IOException | InterruptedException e) {
+        } catch (Exception e) {
 
             Logger.getLogger(this.name).severe(e.getMessage());
             System.exit(e.hashCode());
         }
+    }
+
+    public boolean isCleanUp(File file) {
+
+        boolean output = false;
+
+        try {
+            output = file.delete();
+        } catch (Exception e) {
+            Logger.getLogger(this.name).severe(e.getMessage());
+        }
+
+        return output;
     }
 }
