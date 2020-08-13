@@ -5,7 +5,7 @@ import project.model.metadata.MetadataType;
 
 public class File extends MetadataProvider {
 
-    public static final MetadataType[] METADATA_FOR_DATASET = {
+    private static final MetadataType[] METADATA_FOR_DATASET = {
             MetadataType.VERSION_INDEX,
             MetadataType.NAME,
             MetadataType.LOC,
@@ -39,5 +39,9 @@ public class File extends MetadataProvider {
 
     public String getHash() {
         return (String) this.getMetadata(MetadataType.HASH);
+    }
+
+    public static MetadataType[] getMetadataTypesForDataset() {
+        return METADATA_FOR_DATASET;
     }
 }

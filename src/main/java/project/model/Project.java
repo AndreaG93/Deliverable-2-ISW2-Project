@@ -57,7 +57,7 @@ public class Project {
 
     public void exportProjectDatasetAsCSV() {
 
-        FileCSV datasetCSV = new FileCSV("Dataset-" + this.name, MetadataType.convertToStringList(File.METADATA_FOR_DATASET));
+        FileCSV datasetCSV = new FileCSV("Dataset-" + this.name, MetadataType.convertToStringList(File.getMetadataTypesForDataset()));
         FileCSV releasesCSV = new FileCSV("Releases-" + this.name, MetadataType.convertToStringList(Release.METADATA_FOR_DATASET));
 
         for (Release release : this.releasesByReleaseDate.values()) {
@@ -65,7 +65,7 @@ public class Project {
             releasesCSV.write(release.getMetadataStringValues(Release.METADATA_FOR_DATASET));
 
             for (File file : release.getFiles())
-                datasetCSV.write(file.getMetadataStringValues(File.METADATA_FOR_DATASET));
+                datasetCSV.write(file.getMetadataStringValues(File.getMetadataTypesForDataset()));
         }
 
         datasetCSV.close();
