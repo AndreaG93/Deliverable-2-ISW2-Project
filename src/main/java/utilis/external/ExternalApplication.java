@@ -91,7 +91,7 @@ public class ExternalApplication {
                 System.exit(1);
             }
 
-        } catch (Exception e) {
+        } catch (IOException | InterruptedException e) {
 
             Logger.getLogger(this.name).severe(e.getMessage());
             System.exit(e.hashCode());

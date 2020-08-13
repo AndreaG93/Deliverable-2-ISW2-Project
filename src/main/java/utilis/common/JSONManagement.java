@@ -3,7 +3,10 @@ package utilis.common;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
@@ -17,15 +20,9 @@ public class JSONManagement {
 
         JSONObject output = null;
 
-        InputStream inputStream = null;
-        InputStreamReader inputStreamReader = null;
-        BufferedReader bufferedReader = null;
-
-
-        try {
-            inputStream = new URL(url).openStream();
-            inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
-            bufferedReader = new BufferedReader(inputStreamReader);
+        try (InputStream inputStream = new URL(url).openStream();
+             InputStreamReader inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+             BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
 
             String jsonText = readAll(bufferedReader);
             output = new JSONObject(jsonText);
@@ -34,29 +31,6 @@ public class JSONManagement {
 
             Logger.getLogger(JSONManagement.class.getName()).severe(e.getMessage());
             System.exit(e.hashCode());
-        } finally {
-
-            if (bufferedReader != null) {
-                try {
-                    bufferedReader.close();
-                } catch (IOException x) {
-                    Logger.getLogger(JSONManagement.class.getName()).severe(x.getMessage());
-                } finally {
-
-                    try {
-                        inputStreamReader.close();
-                    } catch (IOException x) {
-                        Logger.getLogger(JSONManagement.class.getName()).severe(x.getMessage());
-                    } finally {
-
-                        try {
-                            inputStream.close();
-                        } catch (IOException x) {
-                            Logger.getLogger(JSONManagement.class.getName()).severe(x.getMessage());
-                        }
-                    }
-                }
-            }
         }
 
         return output;
