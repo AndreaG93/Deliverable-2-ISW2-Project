@@ -224,7 +224,7 @@ public class ProjectDatasetBuilder {
             for (Release release : affectedVersion)
                 for (String defectiveFilename : defectiveFilenameList)
                     if (Utils.isJavaFile(defectiveFilename))
-                        release.setFileAsDefectiveIncrementingNumberOfFix(defectiveFilename);
+                        release.setFileAsDefectiveIncrementingNumberOfFix(defectiveFilename); // TODO NULLPOINT OPENJPA
         }
     }
 

@@ -10,8 +10,11 @@ import java.util.List;
 public class WalkForward {
 
     private final Instances[] parts;
+    private final int numOfAllInstance;
 
     public WalkForward(Instances allInstancesOfDataset) {
+
+        this.numOfAllInstance = allInstancesOfDataset.numInstances();
 
         int numberOfAttributes = allInstancesOfDataset.numAttributes();
         int datasetSubSetsAmount = allInstancesOfDataset.numDistinctValues(0);
@@ -66,7 +69,7 @@ public class WalkForward {
             Instances currentTrainingSet = getDataSetSubsetForTraining(runIndex);
             Instances currentTestingSet = getDataSetSubsetForTesting(runIndex);
 
-            output.add(new WalkForwardRunInput(currentTrainingSet, currentTestingSet, runIndex + 1));
+            output.add(new WalkForwardRunInput(currentTrainingSet, currentTestingSet, runIndex + 1, this.numOfAllInstance));
         }
 
         return output;

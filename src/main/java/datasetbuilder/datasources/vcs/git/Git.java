@@ -34,14 +34,16 @@ public class Git implements VersionControlSystem {
     @Override
     public Commit getCommitByTag(String tag) {
 
-        OneLineReader gitOutputReader = new OneLineReader();
+        ExternalApplicationOutputListMaker gitOutputReader = new ExternalApplicationOutputListMaker();
 
         this.gitApplication.execute(gitOutputReader, "show-ref", "-s", tag);
 
-        if (gitOutputReader.getOutput() != null)
+        List<String> gitOutput = gitOutputReader.output;
 
-            return getCommitByHash(gitOutputReader.getOutput());
-
+        if (gitOutput.size() > 1)
+            return null;
+        else if (gitOutput.size() == 1)
+            return getCommitByHash(gitOutput.get(0));
         else {
 
             ExternalApplicationOutputListMaker reader = new ExternalApplicationOutputListMaker();
@@ -52,9 +54,8 @@ public class Git implements VersionControlSystem {
                 if (outputTag.contains(tag))
                     return getCommitByTag(outputTag);
 
+            return null;
         }
-
-        return null;
     }
 
     @Override

@@ -7,6 +7,7 @@ import entities.project.Bookkeeper;
 import entities.project.OpenJPA;
 import entities.predictor.DefectiveClassesPredictor;
 import entities.enums.PredictorEvaluationOutputField;
+import predictor.Predictor;
 import predictor.options.WekaAttributeSelection;
 import predictor.options.WekaClassifier;
 import predictor.options.WekaFilter;
@@ -30,37 +31,26 @@ public class PredictorsEvaluator {
 
         for (Project project : projectList) {
 
-            List<DefectiveClassesPredictor> predictors = generatePredictors();
-            List<List<MetadataProvider<PredictorEvaluationOutputField>>> evaluations = evaluatePredictors(predictors, project);
+
+            List<List<MetadataProvider<PredictorEvaluationOutputField>>> evaluations = getEvaluations(project);
 
             exportEvaluationsAsCSV(evaluations, project);
         }
     }
 
-    private static List<DefectiveClassesPredictor> generatePredictors() {
+    private static List<List<MetadataProvider<PredictorEvaluationOutputField>>> getEvaluations(Project project) {
 
-        List<DefectiveClassesPredictor> output = new ArrayList<>();
+        List<List<MetadataProvider<PredictorEvaluationOutputField>>> output = new ArrayList<>();
 
         for (WekaAttributeSelection wekaAttributeSelection : WekaAttributeSelection.values())
             for (WekaClassifier wekaClassifier : WekaClassifier.values())
                 for (WekaFilter wekaFilter : WekaFilter.values())
-                    output.add(new DefectiveClassesPredictor(wekaClassifier, wekaFilter, wekaAttributeSelection));
+                    output.add(getPredictorEvaluation(project, wekaClassifier, wekaFilter, wekaAttributeSelection));
 
         return output;
     }
 
-    private static List<List<MetadataProvider<PredictorEvaluationOutputField>>> evaluatePredictors(List<DefectiveClassesPredictor> predictors, Project project) {
-
-        List<List<MetadataProvider<PredictorEvaluationOutputField>>> output = new ArrayList<>();
-
-        for (DefectiveClassesPredictor predictor : predictors)
-            output.add(getPredictorEvaluation(predictor, project));
-
-        return output;
-    }
-
-
-    private static List<MetadataProvider<PredictorEvaluationOutputField>> getPredictorEvaluation(DefectiveClassesPredictor predictor, Project project) {
+    private static List<MetadataProvider<PredictorEvaluationOutputField>> getPredictorEvaluation(Project project, WekaClassifier wekaClassifier, WekaFilter wekaFilter, WekaAttributeSelection wekaAttributeSelection) {
 
         List<MetadataProvider<PredictorEvaluationOutputField>> output = new ArrayList<>();
         Instances instances = getDatasetInstances(project.datasetFilename);
@@ -69,6 +59,8 @@ public class PredictorsEvaluator {
         List<WalkForwardRunInput> runInputs = validationTechnique.getWalkForwardRunInputs();
 
         for (WalkForwardRunInput input : runInputs) {
+
+            Predictor<PredictorEvaluationOutputField> predictor = new DefectiveClassesPredictor(wekaClassifier, wekaFilter, wekaAttributeSelection);
 
             MetadataProvider<PredictorEvaluationOutputField> evaluation = predictor.getEvaluationResults(input);
 

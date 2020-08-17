@@ -16,6 +16,9 @@ import java.util.logging.Logger;
 
 public class DefectiveClassesPredictor extends Predictor<PredictorEvaluationOutputField> {
 
+    private Instances trainingSet;
+    private Instances testingSet;
+
     private final MetadataProvider<PredictorEvaluationOutputField> evaluation;
 
     public DefectiveClassesPredictor(WekaClassifier wekaClassifier, WekaFilter wekaFilter, WekaAttributeSelection wekaAttributeSelection) {
@@ -28,36 +31,35 @@ public class DefectiveClassesPredictor extends Predictor<PredictorEvaluationOutp
         this.evaluation.setMetadata(PredictorEvaluationOutputField.FEATURE_SELECTION, this.wekaAttributeSelection);
     }
 
-    private Instances setupTrainingSet(PredictorInput input) {
-
-        Instances output = null;
+    private void setupSets(PredictorInput input) {
 
         try {
 
             if (this.attributeSelection != null) {
 
                 this.attributeSelection.setInputFormat(input.trainingSet);
-                output = Filter.useFilter(input.trainingSet, this.attributeSelection);
 
-            } else
-                output = input.trainingSet;
+                this.trainingSet = Filter.useFilter(input.trainingSet, this.attributeSelection);
+                this.testingSet = Filter.useFilter(input.trainingSet, this.attributeSelection);
+
+            } else {
+
+                this.trainingSet = input.trainingSet;
+                this.testingSet = input.testingSet;
+            }
 
         } catch (Exception e) {
 
             Logger.getLogger(Predictor.class.getName()).severe(e.getMessage());
             System.exit(e.hashCode());
         }
-
-        return output;
     }
 
     private void setupFilterOptions() {
 
         try {
 
-            FilteredClassifier filteredClassifier = (FilteredClassifier) this.classifier;
             String[] options;
-
 
             switch (this.wekaFilter) {
 
@@ -78,8 +80,17 @@ public class DefectiveClassesPredictor extends Predictor<PredictorEvaluationOutp
                     options = null;
             }
 
-            if (options != null)
-                filteredClassifier.setOptions(options);
+            if (options != null) {
+
+                this.filter.setOptions(options);
+
+                FilteredClassifier filteredClassifier = new FilteredClassifier();
+                filteredClassifier.setFilter(this.filter);
+                filteredClassifier.setClassifier(this.classifier);
+
+                this.classifier = filteredClassifier;
+            }
+
 
         } catch (Exception e) {
 
@@ -98,21 +109,21 @@ public class DefectiveClassesPredictor extends Predictor<PredictorEvaluationOutp
         this.evaluation.setMetadata(PredictorEvaluationOutputField.PERCENTAGE_DEFECTIVE_TRAINING, input.getPercentageOfTrainingSetInstancesWith(evaluationClassIndex, "true"));
         this.evaluation.setMetadata(PredictorEvaluationOutputField.PERCENTAGE_DEFECTIVE_TESTING, input.getPercentageOfTestingSetInstancesWith(evaluationClassIndex, "true"));
 
-        Instances trainingSet = setupTrainingSet(input);
-        Instances testingSet = input.testingSet;
+        setupSets(input);
 
-        setupFilterOptions();
+        if (this.filter != null)
+            setupFilterOptions();
 
-        Evaluation wekaEval = evaluate(trainingSet, testingSet, evaluationClassIndex);
+        Evaluation wekaEval = evaluate(this.trainingSet, this.testingSet);
 
-        this.evaluation.setMetadata(PredictorEvaluationOutputField.TRUE_POSITIVE, wekaEval.numTruePositives(evaluationClassIndex));
-        this.evaluation.setMetadata(PredictorEvaluationOutputField.TRUE_NEGATIVE, wekaEval.numTruePositives(evaluationClassIndex));
-        this.evaluation.setMetadata(PredictorEvaluationOutputField.FALSE_POSITIVE, wekaEval.falsePositiveRate(evaluationClassIndex));
-        this.evaluation.setMetadata(PredictorEvaluationOutputField.FALSE_NEGATIVE, wekaEval.falseNegativeRate(evaluationClassIndex));
+        this.evaluation.setMetadata(PredictorEvaluationOutputField.TRUE_POSITIVE, wekaEval.numTruePositives(1));
+        this.evaluation.setMetadata(PredictorEvaluationOutputField.TRUE_NEGATIVE, wekaEval.numTruePositives(1));
+        this.evaluation.setMetadata(PredictorEvaluationOutputField.FALSE_POSITIVE, wekaEval.falsePositiveRate(1));
+        this.evaluation.setMetadata(PredictorEvaluationOutputField.FALSE_NEGATIVE, wekaEval.falseNegativeRate(1));
 
-        this.evaluation.setMetadata(PredictorEvaluationOutputField.PRECISION, wekaEval.precision(evaluationClassIndex));
-        this.evaluation.setMetadata(PredictorEvaluationOutputField.RECALL, wekaEval.recall(evaluationClassIndex));
-        this.evaluation.setMetadata(PredictorEvaluationOutputField.ROC_AREA, wekaEval.areaUnderROC(evaluationClassIndex));
+        this.evaluation.setMetadata(PredictorEvaluationOutputField.PRECISION, wekaEval.precision(1));
+        this.evaluation.setMetadata(PredictorEvaluationOutputField.RECALL, wekaEval.recall(1));
+        this.evaluation.setMetadata(PredictorEvaluationOutputField.ROC_AREA, wekaEval.areaUnderROC(1));
         this.evaluation.setMetadata(PredictorEvaluationOutputField.KAPPA, wekaEval.kappa());
 
         return this.evaluation;

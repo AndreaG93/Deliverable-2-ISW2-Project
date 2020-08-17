@@ -8,7 +8,6 @@ import weka.attributeSelection.ASEvaluation;
 import weka.attributeSelection.ASSearch;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
-import weka.classifiers.meta.FilteredClassifier;
 import weka.core.Instances;
 import weka.filters.Filter;
 import weka.filters.supervised.attribute.AttributeSelection;
@@ -23,6 +22,7 @@ public abstract class Predictor<T> {
     protected final WekaAttributeSelection wekaAttributeSelection;
 
     protected Classifier classifier;
+    protected Filter filter;
     protected AttributeSelection attributeSelection;
 
 
@@ -46,18 +46,12 @@ public abstract class Predictor<T> {
 
     private void setClassifier() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
 
-        if (this.wekaFilter != WekaFilter.NO_SAMPLING) {
+        this.classifier = (Classifier) Class.forName(this.wekaClassifier.getWekaClassName()).getDeclaredConstructor().newInstance();
 
-            Filter filter = (Filter) Class.forName(this.wekaFilter.className).getDeclaredConstructor().newInstance();
-
-            FilteredClassifier filteredClassifier = new FilteredClassifier();
-            filteredClassifier.setFilter(filter);
-            filteredClassifier.setClassifier(this.classifier);
-
-            this.classifier = filteredClassifier;
-
-        } else
-            this.classifier = (Classifier) Class.forName(this.wekaClassifier.getWekaClassName()).getDeclaredConstructor().newInstance();
+        if (this.wekaFilter != WekaFilter.NO_SAMPLING)
+            this.filter = (Filter) Class.forName(this.wekaFilter.className).getDeclaredConstructor().newInstance();
+        else
+            this.filter = null;
     }
 
     private void setAttributeSelection() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
@@ -76,18 +70,19 @@ public abstract class Predictor<T> {
         }
     }
 
-    protected Evaluation evaluate(Instances trainingSet, Instances testingSet, int evaluationClassIndex) {
+    protected Evaluation evaluate(Instances trainingSet, Instances testingSet) {
 
         Evaluation output = null;
 
         try {
 
-            trainingSet.setClassIndex(evaluationClassIndex);
-            testingSet.setClassIndex(evaluationClassIndex);
+            trainingSet.setClassIndex(trainingSet.numAttributes() - 1);
+            testingSet.setClassIndex(testingSet.numAttributes() - 1);
 
             this.classifier.buildClassifier(trainingSet);
 
             output = new Evaluation(testingSet);
+            output.evaluateModel(this.classifier, testingSet);
 
         } catch (Exception e) {
 

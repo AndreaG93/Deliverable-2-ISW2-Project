@@ -14,14 +14,14 @@ public class PredictorInput {
     private final double trainingSetNumberOfInstances;
     private final double testingSetNumberOfInstances;
 
-    public PredictorInput(Instances trainingSet, Instances testingSet) {
+    public PredictorInput(Instances trainingSet, Instances testingSet, int numOfAllInstance) {
         this.trainingSet = trainingSet;
         this.testingSet = testingSet;
 
         this.trainingSetNumberOfInstances = this.trainingSet.numInstances();
         this.testingSetNumberOfInstances = this.testingSet.numInstances();
 
-        this.percentageTrainingInstances = (this.trainingSetNumberOfInstances * 100) / (this.trainingSetNumberOfInstances + this.testingSetNumberOfInstances);
+        this.percentageTrainingInstances = (this.trainingSetNumberOfInstances * 100) / numOfAllInstance;
     }
 
     public double getPercentageOfTrainingSetInstancesWith(int attributeIndex, String expectedAttributeValue) {
