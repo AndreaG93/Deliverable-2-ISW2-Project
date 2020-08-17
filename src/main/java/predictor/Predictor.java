@@ -44,7 +44,7 @@ public abstract class Predictor<T> {
         }
     }
 
-    private void setClassifier() throws Exception {
+    private void setClassifier() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
 
         if (this.wekaFilter != WekaFilter.NO_SAMPLING) {
 
