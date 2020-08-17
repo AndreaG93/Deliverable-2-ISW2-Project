@@ -14,8 +14,8 @@ import entities.enums.ReleaseOutputField;
 import entities.project.Project;
 import entities.release.Release;
 import entities.release.ReleaseComparator;
-import utilis.common.ArithmeticMean;
-import utilis.common.Utils;
+import entities.ArithmeticMean;
+import utilis.Utils;
 
 import java.time.LocalDateTime;
 import java.util.*;

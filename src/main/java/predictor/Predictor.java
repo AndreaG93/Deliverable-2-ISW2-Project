@@ -1,13 +1,15 @@
 package predictor;
 
+import entities.MetadataProvider;
 import predictor.options.WekaAttributeSelection;
 import predictor.options.WekaClassifier;
 import predictor.options.WekaFilter;
-import entities.MetadataProvider;
 import weka.attributeSelection.ASEvaluation;
 import weka.attributeSelection.ASSearch;
 import weka.classifiers.Classifier;
+import weka.classifiers.Evaluation;
 import weka.classifiers.meta.FilteredClassifier;
+import weka.core.Instances;
 import weka.filters.Filter;
 import weka.filters.supervised.attribute.AttributeSelection;
 
@@ -51,6 +53,9 @@ public abstract class Predictor<T> {
             filteredClassifier.setFilter(filter);
             filteredClassifier.setClassifier(this.classifier);
 
+            if (this.wekaFilter.options != null)
+                filteredClassifier.setOptions(this.wekaFilter.options);
+
             this.classifier = filteredClassifier;
 
         } else
@@ -71,6 +76,28 @@ public abstract class Predictor<T> {
         } else {
             this.attributeSelection = null;
         }
+    }
+
+    protected Evaluation evaluate(Instances trainingSet, Instances testingSet, int evaluationClassIndex) {
+
+        Evaluation output = null;
+
+        try {
+
+            trainingSet.setClassIndex(evaluationClassIndex);
+            testingSet.setClassIndex(evaluationClassIndex);
+
+            this.classifier.buildClassifier(trainingSet);
+
+            output = new Evaluation(testingSet);
+
+        } catch (Exception e) {
+
+            Logger.getLogger(Predictor.class.getName()).severe(e.getMessage());
+            System.exit(e.hashCode());
+        }
+
+        return output;
     }
 
     public abstract MetadataProvider<T> getEvaluationResults(PredictorInput input);

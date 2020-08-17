@@ -1,4 +1,4 @@
-package utilis.common;
+package utilis;
 
 import org.json.JSONArray;
 import org.json.JSONObject;

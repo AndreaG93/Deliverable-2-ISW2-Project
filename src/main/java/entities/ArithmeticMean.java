@@ -1,4 +1,4 @@
-package utilis.common;
+package entities;
 
 public class ArithmeticMean {
 

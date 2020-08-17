@@ -7,7 +7,7 @@ import entities.enums.ReleaseOutputField;
 import entities.release.Release;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import utilis.common.Utils;
+import utilis.Utils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -15,8 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static utilis.common.JSONManagement.extractFieldFromJsonArray;
-import static utilis.common.JSONManagement.readJsonFromUrl;
+import static utilis.JSONManagement.extractFieldFromJsonArray;
+import static utilis.JSONManagement.readJsonFromUrl;
 
 public class Jira implements IssueTrackingSystem {
 

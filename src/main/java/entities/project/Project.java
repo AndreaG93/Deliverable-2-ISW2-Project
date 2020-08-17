@@ -13,8 +13,8 @@ public class Project {
         this.name = name;
         this.gitRepositoryURL = gitRepositoryURL;
 
-        this.datasetFilename = this.name + "-Dataset";
-        this.releasesFilename = this.name + "-Releases";
-        this.predictorsEvaluationFilename = this.name + "-PredictorsEvaluation";
+        this.datasetFilename = this.name.toUpperCase() + "-Dataset.csv";
+        this.releasesFilename = this.name.toUpperCase() + "-Releases.csv";
+        this.predictorsEvaluationFilename = this.name.toUpperCase() + "-PredictorsEvaluation.csv";
     }
 }

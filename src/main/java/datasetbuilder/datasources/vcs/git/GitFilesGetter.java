@@ -1,7 +1,7 @@
 package datasetbuilder.datasources.vcs.git;
 
 import entities.File;
-import utilis.common.Utils;
+import utilis.Utils;
 import utilis.external.ExternalApplicationOutputReader;
 
 import java.util.Map;

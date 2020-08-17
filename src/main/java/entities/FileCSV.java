@@ -2,7 +2,7 @@ package entities;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
-import utilis.common.ResourceManagement;
+import utilis.Utils;
 
 import java.io.FileWriter;
 import java.util.List;
@@ -43,8 +43,8 @@ public class FileCSV {
 
     public void close() {
 
-        ResourceManagement.close(csvPrinter);
-        ResourceManagement.close(fileWriter);
+        Utils.close(csvPrinter);
+        Utils.close(fileWriter);
     }
 
     private void printErrorClosingCSVFile(Exception exception) {
