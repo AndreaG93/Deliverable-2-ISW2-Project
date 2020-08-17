@@ -1,6 +1,5 @@
 package entities;
 
-import entities.MetadataProvider;
 import entities.enums.DatasetOutputField;
 
 public class File extends MetadataProvider<DatasetOutputField> {

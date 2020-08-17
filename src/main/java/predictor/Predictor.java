@@ -13,6 +13,7 @@ import weka.core.Instances;
 import weka.filters.Filter;
 import weka.filters.supervised.attribute.AttributeSelection;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.logging.Logger;
 
 public abstract class Predictor<T> {
@@ -62,7 +63,7 @@ public abstract class Predictor<T> {
             this.classifier = (Classifier) Class.forName(this.wekaClassifier.getWekaClassName()).getDeclaredConstructor().newInstance();
     }
 
-    private void setAttributeSelection() throws Exception {
+    private void setAttributeSelection() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
 
         if (this.wekaAttributeSelection.searchTechniqueClassName != null && this.wekaAttributeSelection.evaluationTechniqueClassName != null) {
 

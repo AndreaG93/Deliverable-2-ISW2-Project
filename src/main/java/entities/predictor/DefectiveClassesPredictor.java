@@ -88,17 +88,17 @@ public class DefectiveClassesPredictor extends Predictor<PredictorEvaluationOutp
 
         setupFilterOptions();
 
-        Evaluation evaluation = evaluate(trainingSet, testingSet, evaluationClassIndex);
+        Evaluation wekaEval = evaluate(trainingSet, testingSet, evaluationClassIndex);
 
-        this.evaluation.setMetadata(PredictorEvaluationOutputField.TRUE_POSITIVE, evaluation.numTruePositives(evaluationClassIndex));
-        this.evaluation.setMetadata(PredictorEvaluationOutputField.TRUE_NEGATIVE, evaluation.numTruePositives(evaluationClassIndex));
-        this.evaluation.setMetadata(PredictorEvaluationOutputField.FALSE_POSITIVE, evaluation.falsePositiveRate(evaluationClassIndex));
-        this.evaluation.setMetadata(PredictorEvaluationOutputField.FALSE_NEGATIVE, evaluation.falseNegativeRate(evaluationClassIndex));
+        this.evaluation.setMetadata(PredictorEvaluationOutputField.TRUE_POSITIVE, wekaEval.numTruePositives(evaluationClassIndex));
+        this.evaluation.setMetadata(PredictorEvaluationOutputField.TRUE_NEGATIVE, wekaEval.numTruePositives(evaluationClassIndex));
+        this.evaluation.setMetadata(PredictorEvaluationOutputField.FALSE_POSITIVE, wekaEval.falsePositiveRate(evaluationClassIndex));
+        this.evaluation.setMetadata(PredictorEvaluationOutputField.FALSE_NEGATIVE, wekaEval.falseNegativeRate(evaluationClassIndex));
 
-        this.evaluation.setMetadata(PredictorEvaluationOutputField.PRECISION, evaluation.precision(evaluationClassIndex));
-        this.evaluation.setMetadata(PredictorEvaluationOutputField.RECALL, evaluation.recall(evaluationClassIndex));
-        this.evaluation.setMetadata(PredictorEvaluationOutputField.ROC_AREA, evaluation.areaUnderROC(evaluationClassIndex));
-        this.evaluation.setMetadata(PredictorEvaluationOutputField.KAPPA, evaluation.kappa());
+        this.evaluation.setMetadata(PredictorEvaluationOutputField.PRECISION, wekaEval.precision(evaluationClassIndex));
+        this.evaluation.setMetadata(PredictorEvaluationOutputField.RECALL, wekaEval.recall(evaluationClassIndex));
+        this.evaluation.setMetadata(PredictorEvaluationOutputField.ROC_AREA, wekaEval.areaUnderROC(evaluationClassIndex));
+        this.evaluation.setMetadata(PredictorEvaluationOutputField.KAPPA, wekaEval.kappa());
 
         return this.evaluation;
     }

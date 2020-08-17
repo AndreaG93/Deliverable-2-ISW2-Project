@@ -1,7 +1,5 @@
 package entities.project;
 
-import entities.project.Project;
-
 public class OpenJPA extends Project {
 
     private static final String PROJECT_NAME = "openjpa";
