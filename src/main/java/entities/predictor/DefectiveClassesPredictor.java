@@ -55,16 +55,31 @@ public class DefectiveClassesPredictor extends Predictor<PredictorEvaluationOutp
 
         try {
 
-            if (this.wekaFilter == WekaFilter.OVER_SAMPLING) {
+            FilteredClassifier filteredClassifier = (FilteredClassifier) this.classifier;
+            String[] options;
 
-                double percentageDefectiveClassTraining = (double) this.evaluation.getMetadata(PredictorEvaluationOutputField.PERCENTAGE_DEFECTIVE_TRAINING);
-                double percentageOfMajorityClass = Math.max(percentageDefectiveClassTraining, 100 - percentageDefectiveClassTraining);
 
-                FilteredClassifier filteredClassifier = (FilteredClassifier) this.classifier;
+            switch (this.wekaFilter) {
 
-                String[] options = new String[]{"-B", "1.0", "-Z", Double.toString(2 * percentageOfMajorityClass)};
-                filteredClassifier.setOptions(options);
+                case OVER_SAMPLING:
+
+                    double percentageDefectiveClassTraining = (double) this.evaluation.getMetadata(PredictorEvaluationOutputField.PERCENTAGE_DEFECTIVE_TRAINING);
+                    double percentageOfMajorityClass = Math.max(percentageDefectiveClassTraining, 100 - percentageDefectiveClassTraining);
+
+                    options = new String[]{"-B", "1.0", "-Z", Double.toString(2 * percentageOfMajorityClass)};
+                    break;
+
+                case UNDER_SAMPLING:
+
+                    options = new String[]{"-M", "1.0"};
+                    break;
+
+                default:
+                    options = null;
             }
+
+            if (options != null)
+                filteredClassifier.setOptions(options);
 
         } catch (Exception e) {
 

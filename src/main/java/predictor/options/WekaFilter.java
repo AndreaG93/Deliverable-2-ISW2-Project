@@ -2,16 +2,14 @@ package predictor.options;
 
 public enum WekaFilter {
 
-    NO_SAMPLING(null, null),
-    OVER_SAMPLING("weka.filters.supervised.instance.Resample", null),
-    UNDER_SAMPLING("weka.filters.supervised.instance.SpreadSubsample", new String[]{"-M", "1.0"}),
-    SMOTE("weka.filters.supervised.instance.SMOTE", null);
+    NO_SAMPLING(null),
+    OVER_SAMPLING("weka.filters.supervised.instance.Resample"),
+    UNDER_SAMPLING("weka.filters.supervised.instance.SpreadSubsample"),
+    SMOTE("weka.filters.supervised.instance.SMOTE");
 
     public final String className;
-    public final String[] options;
 
-    WekaFilter(String className, String[] options) {
+    WekaFilter(String className) {
         this.className = className;
-        this.options = options;
     }
 }

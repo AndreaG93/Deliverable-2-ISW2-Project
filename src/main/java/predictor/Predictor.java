@@ -54,9 +54,6 @@ public abstract class Predictor<T> {
             filteredClassifier.setFilter(filter);
             filteredClassifier.setClassifier(this.classifier);
 
-            if (this.wekaFilter.options != null)
-                filteredClassifier.setOptions(this.wekaFilter.options);
-
             this.classifier = filteredClassifier;
 
         } else
