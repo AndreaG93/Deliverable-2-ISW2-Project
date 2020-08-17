@@ -1,5 +1,7 @@
 package utilis.common;
 
+import entities.FileCSV;
+
 import java.io.Closeable;
 import java.util.logging.Logger;
 
