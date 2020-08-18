@@ -15,7 +15,7 @@ public class DatasetBuilder {
 
         List<Project> projectList = new ArrayList<>();
 
-        //projectList.add(new Bookkeeper());
+        projectList.add(new Bookkeeper());
         projectList.add(new OpenJPA());
 
         for (Project project : projectList) {

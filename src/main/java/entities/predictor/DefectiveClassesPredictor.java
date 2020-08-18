@@ -117,9 +117,9 @@ public class DefectiveClassesPredictor extends Predictor<PredictorEvaluationOutp
         Evaluation wekaEval = evaluate(this.trainingSet, this.testingSet);
 
         this.evaluation.setMetadata(PredictorEvaluationOutputField.TRUE_POSITIVE, wekaEval.numTruePositives(1));
-        this.evaluation.setMetadata(PredictorEvaluationOutputField.TRUE_NEGATIVE, wekaEval.numTruePositives(1));
-        this.evaluation.setMetadata(PredictorEvaluationOutputField.FALSE_POSITIVE, wekaEval.falsePositiveRate(1));
-        this.evaluation.setMetadata(PredictorEvaluationOutputField.FALSE_NEGATIVE, wekaEval.falseNegativeRate(1));
+        this.evaluation.setMetadata(PredictorEvaluationOutputField.TRUE_NEGATIVE, wekaEval.numTrueNegatives(1));
+        this.evaluation.setMetadata(PredictorEvaluationOutputField.FALSE_POSITIVE, wekaEval.numFalsePositives(1));
+        this.evaluation.setMetadata(PredictorEvaluationOutputField.FALSE_NEGATIVE, wekaEval.numFalseNegatives(1));
 
         this.evaluation.setMetadata(PredictorEvaluationOutputField.PRECISION, wekaEval.precision(1));
         this.evaluation.setMetadata(PredictorEvaluationOutputField.RECALL, wekaEval.recall(1));

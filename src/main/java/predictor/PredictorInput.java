@@ -21,7 +21,7 @@ public class PredictorInput {
         this.trainingSetNumberOfInstances = this.trainingSet.numInstances();
         this.testingSetNumberOfInstances = this.testingSet.numInstances();
 
-        this.percentageTrainingInstances = (this.trainingSetNumberOfInstances * 100) / numOfAllInstance;
+        this.percentageTrainingInstances = this.trainingSetNumberOfInstances / numOfAllInstance * 100;
     }
 
     public double getPercentageOfTrainingSetInstancesWith(int attributeIndex, String expectedAttributeValue) {

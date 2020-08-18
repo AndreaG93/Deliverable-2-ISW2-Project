@@ -16,10 +16,10 @@ public class WalkForward {
 
         this.numOfAllInstance = allInstancesOfDataset.numInstances();
 
-        int numberOfAttributes = allInstancesOfDataset.numAttributes();
         int datasetSubSetsAmount = allInstancesOfDataset.numDistinctValues(0);
 
         this.parts = new Instances[datasetSubSetsAmount];
+
         int[] datasetSubSetsCardinality = new int[datasetSubSetsAmount];
 
         for (int index = 0; index < allInstancesOfDataset.numInstances(); index++) {
@@ -34,9 +34,8 @@ public class WalkForward {
         for (int index = 0; index < datasetSubSetsAmount; index++) {
 
             this.parts[index] = new Instances(allInstancesOfDataset, firstIndex, datasetSubSetsCardinality[index]);
-            this.parts[index].setClassIndex(numberOfAttributes - 1);
 
-            firstIndex = datasetSubSetsCardinality[index];
+            firstIndex += datasetSubSetsCardinality[index];
         }
     }
 
