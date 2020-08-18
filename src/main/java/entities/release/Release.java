@@ -19,7 +19,14 @@ public class Release extends MetadataProvider<ReleaseOutputField> {
         super();
     }
 
-    public void setFileAsDefectiveIncrementingNumberOfFix(String filename) {
+    public void setFileAsDefective(String filename) {
+
+        File file = this.fileRegistry.get(filename);
+        if (file != null)
+            file.setMetadata(DatasetOutputField.IS_BUGGY, true);
+    }
+
+    public void incrementNumberOfFixOfFile(String filename) {
 
         File file = this.fileRegistry.get(filename);
         if (file != null) {
@@ -27,10 +34,11 @@ public class Release extends MetadataProvider<ReleaseOutputField> {
             int numberOfFix = (int) file.getMetadata(DatasetOutputField.NUMBER_OF_FIX);
             numberOfFix++;
 
-            file.setMetadata(DatasetOutputField.IS_BUGGY, true);
             file.setMetadata(DatasetOutputField.NUMBER_OF_FIX, numberOfFix);
         }
     }
+
+
 
 
     public Commit getCommit() {

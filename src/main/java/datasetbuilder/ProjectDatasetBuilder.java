@@ -227,14 +227,26 @@ public class ProjectDatasetBuilder {
 
             for (Release release : affectedVersion)
                 for (String defectiveFilename : defectiveFilenameList)
-                    if (Utils.isJavaFile(defectiveFilename))
-                        release.setFileAsDefectiveIncrementingNumberOfFix(defectiveFilename);
+                    if (Utils.isJavaFile(defectiveFilename)) {
+
+                        release.setFileAsDefective(defectiveFilename);
+                        updateNumberOfFix(fixCommit, defectiveFilename);
+                    }
         }
+    }
+
+    private void updateNumberOfFix(Commit fixCommit, String filename) {
+
+        for (Release release : this.releasesByReleaseDate.values())
+            if (fixCommit.date.compareTo(release.getReleaseDate()) < 0)
+                release.incrementNumberOfFixOfFile(filename);
     }
 
     private void collectFileMetadataOfEachRelease() {
 
         for (Release release : this.releasesByReleaseDate.values()) {
+
+            Logger.getLogger(ProjectDatasetBuilder.class.getName()).info("Getting file metadata for release: " + release.getMetadataAsString(ReleaseOutputField.NAME));
 
             ConcurrentLinkedQueue<File> waitFreeQueue = new ConcurrentLinkedQueue<>(release.getFiles());
 
