@@ -5,16 +5,12 @@ import datasetbuilder.datasources.its.IssueTrackingSystem;
 import datasetbuilder.datasources.its.jira.Jira;
 import datasetbuilder.datasources.vcs.VersionControlSystem;
 import datasetbuilder.datasources.vcs.git.Git;
-import entities.Commit;
-import entities.File;
-import entities.FileCSV;
-import entities.Issue;
+import entities.*;
 import entities.enums.DatasetOutputField;
 import entities.enums.ReleaseOutputField;
 import entities.project.Project;
 import entities.release.Release;
 import entities.release.ReleaseComparator;
-import entities.ArithmeticMean;
 import utilis.Utils;
 
 import java.time.LocalDateTime;
@@ -32,10 +28,10 @@ public class ProjectDatasetBuilder {
     private final VersionControlSystem versionControlSystem;
     private final IssueTrackingSystem issueTrackingSystem;
 
+
     private Map<LocalDateTime, Release> releasesByReleaseDate;
     private Map<Integer, Release> releasesByVersionID;
     private Map<Integer, Release> releasesByIndex;
-
     private double defectiveFileProportion;
 
     public ProjectDatasetBuilder(Project project) {
@@ -64,7 +60,7 @@ public class ProjectDatasetBuilder {
 
     public void exportProjectDatasetAsCSV() {
 
-        FileCSV datasetCSV = new FileCSV(this.project.datasetFilename,  DatasetOutputField.convertToStringList());
+        FileCSV datasetCSV = new FileCSV(this.project.datasetFilename, DatasetOutputField.convertToStringList());
         FileCSV releasesCSV = new FileCSV(this.project.releasesFilename, ReleaseOutputField.convertToStringList());
 
         for (Release release : this.releasesByReleaseDate.values()) {
@@ -167,8 +163,11 @@ public class ProjectDatasetBuilder {
 
             if (issue.affectedVersionsIDs.length > 0) {
 
-                for (int av : issue.getUtilizableFixedVersionsIDs())
-                    affectedVersions.add(this.releasesByVersionID.get(av));
+                for (int av : issue.getUtilizableFixedVersionsIDs()) {
+
+                    Release release = this.releasesByVersionID.get(av);
+                    affectedVersions.add(release);
+                }
 
             } else {
 
@@ -176,9 +175,14 @@ public class ProjectDatasetBuilder {
                 int openingVersionIndex = getOpeningVersionIndex(issue);
                 int introductionVersionIndex = (int) Math.round((fixedVersionIndex - ((fixedVersionIndex - openingVersionIndex) * this.defectiveFileProportion)));
 
-                for (int x = introductionVersionIndex; x < fixedVersionIndex; x++)
-                    affectedVersions.add(this.releasesByIndex.get(x));
+                if (introductionVersionIndex < 0)
+                    introductionVersionIndex = 0;
 
+                for (int x = introductionVersionIndex; x < fixedVersionIndex; x++) {
+
+                    Release release = this.releasesByIndex.get(x);
+                    affectedVersions.add(release);
+                }
             }
 
             setDefectiveFiles(affectedVersions, issue);
@@ -224,7 +228,7 @@ public class ProjectDatasetBuilder {
             for (Release release : affectedVersion)
                 for (String defectiveFilename : defectiveFilenameList)
                     if (Utils.isJavaFile(defectiveFilename))
-                        release.setFileAsDefectiveIncrementingNumberOfFix(defectiveFilename); // TODO NULLPOINT OPENJPA
+                        release.setFileAsDefectiveIncrementingNumberOfFix(defectiveFilename);
         }
     }
 
