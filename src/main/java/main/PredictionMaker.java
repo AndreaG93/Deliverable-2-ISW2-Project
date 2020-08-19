@@ -3,11 +3,13 @@ package main;
 import entities.project.Bookkeeper;
 import entities.project.Project;
 import weka.classifiers.Classifier;
+import weka.classifiers.meta.FilteredClassifier;
 import weka.classifiers.trees.RandomForest;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils;
 import weka.filters.Filter;
+import weka.filters.supervised.instance.SMOTE;
 import weka.filters.unsupervised.attribute.Remove;
 
 import java.io.BufferedWriter;
@@ -56,13 +58,19 @@ public class PredictionMaker {
             filteredUnlabeled.setClassIndex(filteredUnlabeled.numAttributes() - 1);
 
             Classifier classifier = new RandomForest();
-            classifier.buildClassifier(filteredLabeled);
+
+            SMOTE smote = new SMOTE();
+            FilteredClassifier fc = new FilteredClassifier();
+            fc.setFilter(smote);
+            fc.setClassifier(classifier);
+            fc.buildClassifier(filteredLabeled);
+
 
             for (int index = 0; index < filteredUnlabeled.numInstances(); index++) {
 
                 Instance instance = filteredUnlabeled.instance(index);
 
-                double label = classifier.classifyInstance(instance);
+                double label = fc.classifyInstance(instance);
                 unlabeled.instance(index).setClassValue(label);
             }
 
@@ -74,7 +82,7 @@ public class PredictionMaker {
                 writer.write(unlabeled.get(index).toString());
                 writer.newLine();
             }
-            
+
             writer.flush();
             writer.close();
 
