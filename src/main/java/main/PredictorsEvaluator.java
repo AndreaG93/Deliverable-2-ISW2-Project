@@ -31,9 +31,7 @@ public class PredictorsEvaluator {
 
         for (Project project : projectList) {
 
-
             List<List<MetadataProvider<PredictorEvaluationOutputField>>> evaluations = getEvaluations(project);
-
             exportEvaluationsAsCSV(evaluations, project);
         }
     }

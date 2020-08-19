@@ -114,7 +114,7 @@ public class DefectiveClassesPredictor extends Predictor<PredictorEvaluationOutp
         if (this.filter != null)
             setupFilterOptions();
 
-        Evaluation wekaEval = evaluate(this.trainingSet, this.testingSet);
+        Evaluation wekaEval = buildSaveAndEvaluate(this.trainingSet, this.testingSet);
 
         this.evaluation.setMetadata(PredictorEvaluationOutputField.TRUE_POSITIVE, wekaEval.numTruePositives(1));
         this.evaluation.setMetadata(PredictorEvaluationOutputField.TRUE_NEGATIVE, wekaEval.numTrueNegatives(1));

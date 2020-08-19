@@ -23,15 +23,14 @@ public class ProjectDatasetBuilder {
 
     public final Project project;
 
+    protected final VersionControlSystem versionControlSystem;
     private final String rootDirectory;
     private final String workingDirectory;
-    private final VersionControlSystem versionControlSystem;
     private final IssueTrackingSystem issueTrackingSystem;
-
 
     private Map<LocalDateTime, Release> releasesByReleaseDate;
     private Map<Integer, Release> releasesByVersionID;
-    private Map<Integer, Release> releasesByIndex;
+    protected Map<Integer, Release> releasesByIndex;
     private double defectiveFileProportion;
 
     public ProjectDatasetBuilder(Project project) {
@@ -63,7 +62,7 @@ public class ProjectDatasetBuilder {
         FileCSV datasetCSV = new FileCSV(this.project.datasetFilename, DatasetOutputField.convertToStringList());
         FileCSV releasesCSV = new FileCSV(this.project.releasesFilename, ReleaseOutputField.convertToStringList());
 
-        for (Release release : this.releasesByReleaseDate.values()) {
+        for (Release release : retrieveReleasesDiscardingHalfOfThem()) {
 
             releasesCSV.write(release.getMetadataAsString(ReleaseOutputField.values()));
 
@@ -77,23 +76,23 @@ public class ProjectDatasetBuilder {
 
     private List<Release> retrieveReleasesDiscardingHalfOfThem() {
 
-        List<Release> output = this.issueTrackingSystem.getReleases(this.project.name);
+        List<Release> output = new ArrayList<>();
 
-        int numberOfReleaseToAnalyze = (int) Math.round(output.size() * 0.5);
+        int numberOfReleaseToAnalyze = (int) Math.round(this.releasesByIndex.size() * 0.5);
 
-        while (output.size() > numberOfReleaseToAnalyze)
-            output.remove(output.size() - 1);
+        for (int index = 0; index < numberOfReleaseToAnalyze; index++)
+            output.add(this.releasesByIndex.get(index));
 
         return output;
     }
 
-    private void collectReleases() {
+    protected void collectReleases() {
 
         this.releasesByVersionID = new TreeMap<>();
         this.releasesByReleaseDate = new TreeMap<>();
         this.releasesByIndex = new TreeMap<>();
 
-        for (Release release : retrieveReleasesDiscardingHalfOfThem()) {
+        for (Release release : this.issueTrackingSystem.getReleases(this.project.name)) {
 
             String releaseTag = (String) release.getMetadata(ReleaseOutputField.NAME);
             LocalDateTime releaseDate = (LocalDateTime) release.getMetadata(ReleaseOutputField.RELEASE_DATE);
@@ -121,12 +120,7 @@ public class ProjectDatasetBuilder {
     private void collectFilesBelongingToEachRelease() {
 
         for (Release release : this.releasesByReleaseDate.values()) {
-
-            Commit releaseCommit = release.getCommit();
-
-            Map<String, File> files = this.versionControlSystem.getFiles(releaseCommit.hash);
-
-            release.setFileRegistry(files);
+            collectFilesOfRelease(release);
         }
     }
 
@@ -244,33 +238,46 @@ public class ProjectDatasetBuilder {
 
     private void collectFileMetadataOfEachRelease() {
 
-        for (Release release : this.releasesByReleaseDate.values()) {
+        for (Release release : retrieveReleasesDiscardingHalfOfThem()) {
 
             Logger.getLogger(ProjectDatasetBuilder.class.getName()).info("Getting file metadata for release: " + release.getMetadataAsString(ReleaseOutputField.NAME));
+            collectReleaseFileMetadata(release);
+        }
+    }
 
-            ConcurrentLinkedQueue<File> waitFreeQueue = new ConcurrentLinkedQueue<>(release.getFiles());
+    protected void collectFilesOfRelease(Release release) {
 
-            List<Thread> threadList = new ArrayList<>();
+        Commit releaseCommit = release.getCommit();
 
-            for (int threadID = 0; threadID < 4; threadID++) {
+        Map<String, File> files = this.versionControlSystem.getFiles(releaseCommit.hash);
 
-                Runnable runnable = new ProjectDatasetBuilderThread(waitFreeQueue, new Git(rootDirectory, workingDirectory, null), release.getCommit());
-                Thread thread = new Thread(runnable);
+        release.setFileRegistry(files);
+    }
 
-                thread.start();
-                threadList.add(thread);
-            }
+    protected void collectReleaseFileMetadata(Release release) {
 
-            try {
+        ConcurrentLinkedQueue<File> waitFreeQueue = new ConcurrentLinkedQueue<>(release.getFiles());
 
-                for (Thread currentThread : threadList)
-                    currentThread.join();
+        List<Thread> threadList = new ArrayList<>();
 
-            } catch (Exception e) {
+        for (int threadID = 0; threadID < 4; threadID++) {
 
-                Logger.getLogger(ProjectDatasetBuilder.class.getName()).severe(e.getMessage());
-                System.exit(e.hashCode());
-            }
+            Runnable runnable = new ProjectDatasetBuilderThread(waitFreeQueue, new Git(rootDirectory, workingDirectory, null), release.getCommit());
+            Thread thread = new Thread(runnable);
+
+            thread.start();
+            threadList.add(thread);
+        }
+
+        try {
+
+            for (Thread currentThread : threadList)
+                currentThread.join();
+
+        } catch (Exception e) {
+
+            Logger.getLogger(ProjectDatasetBuilder.class.getName()).severe(e.getMessage());
+            System.exit(e.hashCode());
         }
     }
 }

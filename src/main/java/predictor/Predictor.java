@@ -1,6 +1,8 @@
 package predictor;
 
 import entities.MetadataProvider;
+import entities.project.Bookkeeper;
+import entities.project.Project;
 import predictor.options.WekaAttributeSelection;
 import predictor.options.WekaClassifier;
 import predictor.options.WekaFilter;
@@ -9,6 +11,8 @@ import weka.attributeSelection.ASSearch;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import weka.core.Instances;
+import weka.core.SerializationHelper;
+import weka.core.converters.ConverterUtils;
 import weka.filters.Filter;
 import weka.filters.supervised.attribute.AttributeSelection;
 
@@ -16,6 +20,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.logging.Logger;
 
 public abstract class Predictor<T> {
+
+    public static final String predictorsDirectory = "./predictors/";
 
     protected final WekaClassifier wekaClassifier;
     protected final WekaFilter wekaFilter;
@@ -25,6 +31,7 @@ public abstract class Predictor<T> {
     protected Filter filter;
     protected AttributeSelection attributeSelection;
 
+    private final String fileName;
 
     public Predictor(WekaClassifier wekaClassifier, WekaFilter wekaFilter, WekaAttributeSelection wekaAttributeSelection) {
 
@@ -42,6 +49,8 @@ public abstract class Predictor<T> {
             Logger.getLogger(Predictor.class.getName()).severe(e.getMessage());
             System.exit(e.hashCode());
         }
+
+        this.fileName = wekaClassifier.name() + "-" + wekaFilter.name() + "-" + wekaAttributeSelection.name();
     }
 
     private void setClassifier() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
@@ -70,7 +79,7 @@ public abstract class Predictor<T> {
         }
     }
 
-    protected Evaluation evaluate(Instances trainingSet, Instances testingSet) {
+    protected Evaluation buildSaveAndEvaluate(Instances trainingSet, Instances testingSet) {
 
         Evaluation output = null;
 
@@ -80,6 +89,8 @@ public abstract class Predictor<T> {
             testingSet.setClassIndex(testingSet.numAttributes() - 1);
 
             this.classifier.buildClassifier(trainingSet);
+
+            SerializationHelper.write(predictorsDirectory + this.fileName, this.classifier);
 
             output = new Evaluation(testingSet);
             output.evaluateModel(this.classifier, testingSet);

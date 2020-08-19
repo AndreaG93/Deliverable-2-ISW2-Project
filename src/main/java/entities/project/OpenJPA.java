@@ -6,6 +6,6 @@ public class OpenJPA extends Project {
     private static final String PROJECT_REPOSITORY_URL = "https://github.com/apache/openjpa";
 
     public OpenJPA() {
-        super(PROJECT_NAME, PROJECT_REPOSITORY_URL);
+        super(PROJECT_NAME, PROJECT_REPOSITORY_URL, "");
     }
 }
