@@ -24,7 +24,7 @@ public class ProjectDatasetBuilderForPredictionPurposes extends ProjectDatasetBu
         collectReleaseFileMetadata(this.release);
 
         for (File file : this.release.getFiles())
-            file.setMetadata(DatasetOutputField.IS_BUGGY, "?");
+            file.setMetadata(DatasetOutputField.IS_BUGGY, null);
     }
 
     @Override

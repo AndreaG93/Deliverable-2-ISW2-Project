@@ -2,6 +2,7 @@ package entities.predictor;
 
 import entities.MetadataProvider;
 import entities.enums.PredictorEvaluationOutputField;
+import entities.project.Project;
 import predictor.Predictor;
 import predictor.PredictorInput;
 import predictor.options.WekaAttributeSelection;
