@@ -1,2 +1,3 @@
-# ISW2-Project
-Repository used for "ISW2" datasetbuilder AA 2019/2020.
+# Deliverable 2 of the ISW2 Project AA 2019/2020.
+
+Andrea Graziani (0273395)
