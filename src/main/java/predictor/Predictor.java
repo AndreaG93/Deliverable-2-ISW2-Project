@@ -58,6 +58,7 @@ public abstract class Predictor<T> {
         if (this.wekaAttributeSelection.searchTechniqueClassName != null && this.wekaAttributeSelection.evaluationTechniqueClassName != null) {
 
             this.attributeSelection = new AttributeSelection();
+
             ASSearch asSearch = (ASSearch) Class.forName(this.wekaAttributeSelection.searchTechniqueClassName).getDeclaredConstructor().newInstance();
             ASEvaluation asEvaluation = (ASEvaluation) Class.forName(this.wekaAttributeSelection.evaluationTechniqueClassName).getDeclaredConstructor().newInstance();
 

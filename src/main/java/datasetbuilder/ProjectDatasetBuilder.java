@@ -23,14 +23,14 @@ public class ProjectDatasetBuilder {
 
     public final Project project;
 
-    protected final VersionControlSystem versionControlSystem;
+    private final VersionControlSystem versionControlSystem;
     private final String rootDirectory;
     private final String workingDirectory;
     private final IssueTrackingSystem issueTrackingSystem;
 
     private Map<LocalDateTime, Release> releasesByReleaseDate;
     private Map<Integer, Release> releasesByVersionID;
-    protected Map<Integer, Release> releasesByIndex;
+    private Map<Integer, Release> releasesByIndex;
     private double defectiveFileProportion;
 
     public ProjectDatasetBuilder(Project project) {

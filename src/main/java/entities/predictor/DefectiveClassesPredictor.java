@@ -2,7 +2,6 @@ package entities.predictor;
 
 import entities.MetadataProvider;
 import entities.enums.PredictorEvaluationOutputField;
-import entities.project.Project;
 import predictor.Predictor;
 import predictor.PredictorInput;
 import predictor.options.WekaAttributeSelection;
@@ -32,22 +31,14 @@ public class DefectiveClassesPredictor extends Predictor<PredictorEvaluationOutp
         this.evaluation.setMetadata(PredictorEvaluationOutputField.FEATURE_SELECTION, this.wekaAttributeSelection);
     }
 
-    private void setupSets(PredictorInput input) {
+    private void applyAttributeSelection(PredictorInput input) {
 
         try {
 
-            if (this.attributeSelection != null) {
+            this.attributeSelection.setInputFormat(input.trainingSet);
 
-                this.attributeSelection.setInputFormat(input.trainingSet);
-
-                this.trainingSet = Filter.useFilter(input.trainingSet, this.attributeSelection);
-                this.testingSet = Filter.useFilter(input.trainingSet, this.attributeSelection);
-
-            } else {
-
-                this.trainingSet = input.trainingSet;
-                this.testingSet = input.testingSet;
-            }
+            this.trainingSet = Filter.useFilter(input.trainingSet, this.attributeSelection);
+            this.testingSet = Filter.useFilter(input.testingSet, this.attributeSelection);
 
         } catch (Exception e) {
 
@@ -56,7 +47,7 @@ public class DefectiveClassesPredictor extends Predictor<PredictorEvaluationOutp
         }
     }
 
-    private void setupFilterOptions() {
+    private void applyFilter() {
 
         try {
 
@@ -110,10 +101,15 @@ public class DefectiveClassesPredictor extends Predictor<PredictorEvaluationOutp
         this.evaluation.setMetadata(PredictorEvaluationOutputField.PERCENTAGE_DEFECTIVE_TRAINING, input.getPercentageOfTrainingSetInstancesWith(evaluationClassIndex, "true"));
         this.evaluation.setMetadata(PredictorEvaluationOutputField.PERCENTAGE_DEFECTIVE_TESTING, input.getPercentageOfTestingSetInstancesWith(evaluationClassIndex, "true"));
 
-        setupSets(input);
+        if (this.attributeSelection != null)
+            applyAttributeSelection(input);
+        else {
+            this.trainingSet = input.trainingSet;
+            this.testingSet = input.testingSet;
+        }
 
         if (this.filter != null)
-            setupFilterOptions();
+            applyFilter();
 
         Evaluation wekaEval = buildSaveAndEvaluate(this.trainingSet, this.testingSet);
 

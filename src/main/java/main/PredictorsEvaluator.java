@@ -85,7 +85,6 @@ public class PredictorsEvaluator {
     private static Instances getDatasetInstances(String path) {
 
         Instances output = null;
-
         try {
 
             ConverterUtils.DataSource dataSource = new ConverterUtils.DataSource(path);
