@@ -1,6 +1,7 @@
 package utilis.external;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -83,14 +84,9 @@ public class ExternalApplication {
             bufferedReader.close();
             process.destroy();
 
-            if (outputRedirection && !temporaryFile.delete()) {
-
-                String errorString = readErrors(process);
-
-                Logger.getLogger(this.name).severe(errorString);
-                System.exit(1);
-            }
-
+            if (outputRedirection)
+                Files.deleteIfExists(temporaryFile.toPath());
+            
         } catch (Exception e) {
 
             Logger.getLogger(this.name).severe(e.getMessage());
