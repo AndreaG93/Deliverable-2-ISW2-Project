@@ -86,7 +86,7 @@ public class ExternalApplication {
 
             if (outputRedirection)
                 Files.deleteIfExists(temporaryFile.toPath());
-            
+
         } catch (Exception e) {
 
             Logger.getLogger(this.name).severe(e.getMessage());

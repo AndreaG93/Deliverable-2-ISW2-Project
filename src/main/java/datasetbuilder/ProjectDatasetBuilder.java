@@ -80,15 +80,8 @@ public class ProjectDatasetBuilder {
 
         int numberOfReleaseToAnalyze = (int) Math.round(this.releasesByIndex.size() * 0.5);
 
-        for (int index = 0; index < numberOfReleaseToAnalyze; index++) {
-
+        for (int index = 0; index < numberOfReleaseToAnalyze; index++)
             output.add(this.releasesByIndex.get(index));
-
-            // Maximum number to release to analyze; I have limited hardware capacity. Remove if you want!
-            if (output.size() == 8)
-                break;
-        }
-
 
         return output;
     }
