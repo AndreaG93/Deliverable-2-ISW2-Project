@@ -2,14 +2,17 @@ package utilis;
 
 public final class OsUtils {
 
-    private static String OS = null;
+    private static String operativeSystem = null;
+
+    private OsUtils() {
+    }
 
     private static String getOsName() {
 
-        if (OS == null)
-            OS = System.getProperty("os.name");
+        if (operativeSystem == null)
+            operativeSystem = System.getProperty("os.name");
 
-        return OS;
+        return operativeSystem;
     }
 
     public static boolean isWindows() {

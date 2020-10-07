@@ -25,7 +25,7 @@ public abstract class Predictor<T> {
     protected Filter filter;
     protected AttributeSelection attributeSelection;
 
-    public Predictor(WekaClassifier wekaClassifier, WekaFilter wekaFilter, WekaAttributeSelection wekaAttributeSelection) {
+    protected Predictor(WekaClassifier wekaClassifier, WekaFilter wekaFilter, WekaAttributeSelection wekaAttributeSelection) {
 
         this.wekaClassifier = wekaClassifier;
         this.wekaFilter = wekaFilter;
