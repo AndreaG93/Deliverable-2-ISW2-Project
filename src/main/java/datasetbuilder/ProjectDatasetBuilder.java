@@ -18,6 +18,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Logger;
 
+import static utilis.OsUtils.isWindows;
+
 
 public class ProjectDatasetBuilder {
 
@@ -37,7 +39,11 @@ public class ProjectDatasetBuilder {
 
         this.project = project;
 
-        this.rootDirectory = "C://";
+        if(isWindows())
+            this.rootDirectory = "C://";
+        else
+            this.rootDirectory = "/home/andrea/";
+
         this.workingDirectory = this.rootDirectory + this.project.name;
 
         this.versionControlSystem = new Git(this.rootDirectory, this.workingDirectory, this.project.gitRepositoryURL);
@@ -79,6 +85,9 @@ public class ProjectDatasetBuilder {
         List<Release> output = new ArrayList<>();
 
         int numberOfReleaseToAnalyze = (int) Math.round(this.releasesByIndex.size() * 0.5);
+
+        if (numberOfReleaseToAnalyze > 7)
+            numberOfReleaseToAnalyze = 7;
 
         for (int index = 0; index < numberOfReleaseToAnalyze; index++)
             output.add(this.releasesByIndex.get(index));
