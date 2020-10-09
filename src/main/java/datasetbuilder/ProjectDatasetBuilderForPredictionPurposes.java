@@ -6,6 +6,9 @@ import entities.enums.DatasetOutputField;
 import entities.project.Project;
 import entities.release.Release;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class ProjectDatasetBuilderForPredictionPurposes extends ProjectDatasetBuilder {
 
     private Release release;
@@ -19,10 +22,13 @@ public class ProjectDatasetBuilderForPredictionPurposes extends ProjectDatasetBu
 
         collectRelease();
         collectFilesOfRelease(this.release);
+        discardJavaTestFile();
         collectReleaseFileMetadata(this.release);
 
-        for (File file : this.release.getFiles())
-            file.setMetadata(DatasetOutputField.IS_BUGGY, null);
+        for (File file : this.release.getFiles()) {
+            file.setMetadata(DatasetOutputField.IS_BUGGY, true);
+            break;
+        }
     }
 
     @Override
@@ -41,5 +47,17 @@ public class ProjectDatasetBuilderForPredictionPurposes extends ProjectDatasetBu
         collectReleases();
 
         this.release = this.releasesByReleaseDate.lastEntry().getValue();
+    }
+
+    private void discardJavaTestFile() {
+
+        Map<String, File> obj = new HashMap<>();
+
+        for (File file : this.release.getFiles()) {
+            if (!file.getName().contains("/src/test/"))
+                obj.put(file.getName(), file);
+        }
+
+        this.release.setFileRegistry(obj);
     }
 }

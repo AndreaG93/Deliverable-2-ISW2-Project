@@ -6,8 +6,10 @@ import entities.project.Project;
 import weka.classifiers.Classifier;
 import weka.classifiers.meta.FilteredClassifier;
 import weka.classifiers.trees.RandomForest;
+import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.converters.ArffSaver;
 import weka.core.converters.ConverterUtils;
 import weka.filters.Filter;
 import weka.filters.supervised.instance.SMOTE;
@@ -16,9 +18,13 @@ import weka.filters.unsupervised.attribute.Remove;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 
 public class PredictionMaker {
+
+    private PredictionMaker() {
+    }
 
     public static void main(String[] args) {
 
@@ -38,47 +44,68 @@ public class PredictionMaker {
             filteredLabeled.setClassIndex(filteredLabeled.numAttributes() - 1);
             filteredUnlabeled.setClassIndex(filteredUnlabeled.numAttributes() - 1);
 
-            Classifier classifier = new RandomForest();
-
-            SMOTE smote = new SMOTE();
-            FilteredClassifier fc = new FilteredClassifier();
-            fc.setFilter(smote);
-            fc.setClassifier(classifier);
-            fc.buildClassifier(filteredLabeled);
-
-
-            for (int index = 0; index < filteredUnlabeled.numInstances(); index++) {
-
-                Instance instance = filteredUnlabeled.instance(index);
-
-                double label = fc.classifyInstance(instance);
-                unlabeled.instance(index).setClassValue(label);
-            }
-
-
-            BufferedWriter writer = new BufferedWriter(new FileWriter("./out.csv"));
-
-            for (int index = 0; index < unlabeled.numInstances(); index++) {
-
-                writer.write(unlabeled.get(index).toString());
-                writer.newLine();
-            }
-
-            writer.flush();
-            writer.close();
+            makePredictions(filteredLabeled, filteredUnlabeled, unlabeled);
+            exportAsCSV(unlabeled, project.name);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public static Instances filterRemovingUselessAttribute(Instances instances) throws Exception {
+    private static void makePredictions(Instances filteredLabeledSet, Instances filteredUnlabeledSet, Instances unlabeledSet) throws Exception {
+
+        Classifier classifier = new RandomForest();
+
+        SMOTE smote = new SMOTE();
+
+        FilteredClassifier filteredClassifier = new FilteredClassifier();
+        filteredClassifier.setFilter(smote);
+        filteredClassifier.setClassifier(classifier);
+        filteredClassifier.buildClassifier(filteredLabeledSet);
+
+        for (int index = 0; index < filteredUnlabeledSet.numInstances(); index++) {
+
+            Instance instance = filteredUnlabeledSet.instance(index);
+
+            double label = classifier.classifyInstance(instance);
+            unlabeledSet.instance(index).setClassValue(label);
+        }
+    }
+
+    private static void exportAsCSV(Instances instances, String filename) throws Exception {
+
+        BufferedWriter writer = new BufferedWriter(new FileWriter("./" + filename + ".csv"));
+
+        Enumeration<Attribute> enumeration = instances.enumerateAttributes();
+        while (enumeration.hasMoreElements())
+        {
+            String nameAttribute = enumeration.nextElement().name();
+            writer.write(nameAttribute + ",");
+        }
+
+        writer.newLine();
+
+        for (int index = 0; index < instances.numInstances(); index++) {
+
+            writer.write(instances.get(index).toString());
+            writer.newLine();
+        }
+
+        writer.close();
+    }
+
+    private static Instances filterRemovingUselessAttribute(Instances instances) throws Exception {
 
         List<Integer> myList = new ArrayList<>();
 
-        for (int n = 0; n < instances.numAttributes(); n++)
+        for (int n = 0; n < instances.numAttributes(); n++) {
+
             if (instances.attribute(n).name().equalsIgnoreCase("NAME") && !myList.contains(n))
                 myList.add(n);
+
+            if (instances.attribute(n).name().equalsIgnoreCase("VERSION_INDEX") && !myList.contains(n))
+                myList.add(n);
+        }
 
         Remove remove = new Remove();
         remove.setAttributeIndicesArray(myList.stream().mapToInt(i -> i).toArray());
