@@ -8,13 +8,11 @@ public class Project {
     public final String releasesFilename;
     public final String predictorsEvaluationFilename;
     public final String datasetForPredictionFilename;
-    public final String lastVersion;
 
-    public Project(String name, String gitRepositoryURL, String lastVersion) {
+    public Project(String name, String gitRepositoryURL) {
 
         this.name = name;
         this.gitRepositoryURL = gitRepositoryURL;
-        this.lastVersion = lastVersion;
 
         this.datasetFilename = this.name.toUpperCase() + "-Dataset.csv";
         this.releasesFilename = this.name.toUpperCase() + "-Releases.csv";

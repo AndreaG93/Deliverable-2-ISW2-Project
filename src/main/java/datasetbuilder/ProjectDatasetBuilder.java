@@ -25,12 +25,12 @@ public class ProjectDatasetBuilder {
 
     public final Project project;
 
-    private final VersionControlSystem versionControlSystem;
+    protected final VersionControlSystem versionControlSystem;
     private final String rootDirectory;
     private final String workingDirectory;
     private final IssueTrackingSystem issueTrackingSystem;
 
-    private Map<LocalDateTime, Release> releasesByReleaseDate;
+    protected TreeMap<LocalDateTime, Release> releasesByReleaseDate;
     private Map<Integer, Release> releasesByVersionID;
     private Map<Integer, Release> releasesByIndex;
     private double defectiveFileProportion;
