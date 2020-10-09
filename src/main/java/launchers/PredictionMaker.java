@@ -28,7 +28,7 @@ public class PredictionMaker {
 
     public static void main(String[] args) {
 
-        Project project = new Bookkeeper();
+        Project project = new OpenJPA();
 
         try {
 

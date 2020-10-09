@@ -21,10 +21,7 @@ public class ProjectDatasetBuilderThread implements Runnable {
     @Override
     public void run() {
 
-        for (File currentFile = this.waitFreeQueue.poll(); currentFile != null; currentFile = this.waitFreeQueue.poll()) {
-
-            System.out.println("Remaining: " + this.waitFreeQueue.size());
+        for (File currentFile = this.waitFreeQueue.poll(); currentFile != null; currentFile = this.waitFreeQueue.poll())
             this.versionControlSystem.computeFileMetrics(currentFile, this.commit);
-        }
     }
 }
