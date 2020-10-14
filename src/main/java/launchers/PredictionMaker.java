@@ -9,7 +9,6 @@ import weka.classifiers.trees.RandomForest;
 import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.core.converters.ArffSaver;
 import weka.core.converters.ConverterUtils;
 import weka.filters.Filter;
 import weka.filters.supervised.instance.SMOTE;
@@ -17,6 +16,7 @@ import weka.filters.unsupervised.attribute.Remove;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -28,7 +28,17 @@ public class PredictionMaker {
 
     public static void main(String[] args) {
 
-        Project project = new OpenJPA();
+        List<Project> projectList = new ArrayList<>();
+
+        projectList.add(new Bookkeeper());
+        projectList.add(new OpenJPA());
+
+        for (Project project : projectList)
+            startPrediction(project);
+
+    }
+
+    private static void startPrediction(Project project) {
 
         try {
 
@@ -72,26 +82,27 @@ public class PredictionMaker {
         }
     }
 
-    private static void exportAsCSV(Instances instances, String filename) throws Exception {
+    private static void exportAsCSV(Instances instances, String filename)  {
 
-        BufferedWriter writer = new BufferedWriter(new FileWriter("./" + filename + ".csv"));
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("./" + filename + ".csv"))) {
 
-        Enumeration<Attribute> enumeration = instances.enumerateAttributes();
-        while (enumeration.hasMoreElements())
-        {
-            String nameAttribute = enumeration.nextElement().name();
-            writer.write(nameAttribute + ",");
-        }
+            Enumeration<Attribute> enumeration = instances.enumerateAttributes();
+            while (enumeration.hasMoreElements())
+            {
+                String nameAttribute = enumeration.nextElement().name();
+                writer.write(nameAttribute + ",");
+            }
 
-        writer.newLine();
-
-        for (int index = 0; index < instances.numInstances(); index++) {
-
-            writer.write(instances.get(index).toString());
             writer.newLine();
-        }
 
-        writer.close();
+            for (int index = 0; index < instances.numInstances(); index++) {
+
+                writer.write(instances.get(index).toString());
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private static Instances filterRemovingUselessAttribute(Instances instances) throws Exception {

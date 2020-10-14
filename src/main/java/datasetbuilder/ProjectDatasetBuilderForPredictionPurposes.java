@@ -6,6 +6,7 @@ import entities.enums.DatasetOutputField;
 import entities.project.Project;
 import entities.release.Release;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,10 +26,9 @@ public class ProjectDatasetBuilderForPredictionPurposes extends ProjectDatasetBu
         discardJavaTestFile();
         collectReleaseFileMetadata(this.release);
 
-        for (File file : this.release.getFiles()) {
-            file.setMetadata(DatasetOutputField.IS_BUGGY, true);
-            break;
-        }
+        Collection<File> files = this.release.getFiles();
+        if (files.size() >= 2)
+            files.iterator().next().setMetadata(DatasetOutputField.IS_BUGGY, true);
     }
 
     @Override
