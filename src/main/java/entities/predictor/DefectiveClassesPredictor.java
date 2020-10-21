@@ -73,16 +73,14 @@ public class DefectiveClassesPredictor extends Predictor<PredictorEvaluationOutp
             }
 
             if (options != null) {
-
                 this.filter.setOptions(options);
-
-                FilteredClassifier filteredClassifier = new FilteredClassifier();
-                filteredClassifier.setFilter(this.filter);
-                filteredClassifier.setClassifier(this.classifier);
-
-                this.classifier = filteredClassifier;
             }
 
+            FilteredClassifier filteredClassifier = new FilteredClassifier();
+            filteredClassifier.setFilter(this.filter);
+            filteredClassifier.setClassifier(this.classifier);
+
+            this.classifier = filteredClassifier;
 
         } catch (Exception e) {
 
