@@ -86,9 +86,6 @@ public class ProjectDatasetBuilder {
 
         int numberOfReleaseToAnalyze = (int) Math.round(this.releasesByIndex.size() * 0.5);
 
-        if (numberOfReleaseToAnalyze > 13)
-           numberOfReleaseToAnalyze = 13;
-
         for (int index = 0; index < numberOfReleaseToAnalyze; index++)
             output.add(this.releasesByIndex.get(index));
 
