@@ -1,6 +1,5 @@
 package launchers;
 
-import com.sun.istack.logging.Logger;
 import entities.project.Bookkeeper;
 import entities.project.OpenJPA;
 import entities.project.Project;
@@ -21,10 +20,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class PredictionMaker {
 
-    private final static Logger LOGGER = Logger.getLogger(PredictionMaker.class);
+    private static final Logger LOGGER = Logger.getLogger("Maker", "");
 
     private PredictionMaker() {
     }
