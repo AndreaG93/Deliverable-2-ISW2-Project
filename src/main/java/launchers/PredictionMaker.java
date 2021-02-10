@@ -1,5 +1,6 @@
 package launchers;
 
+import com.sun.istack.logging.Logger;
 import entities.project.Bookkeeper;
 import entities.project.OpenJPA;
 import entities.project.Project;
@@ -22,6 +23,8 @@ import java.util.Enumeration;
 import java.util.List;
 
 public class PredictionMaker {
+
+    private final static Logger LOGGER = Logger.getLogger(PredictionMaker.class);
 
     private PredictionMaker() {
     }
@@ -58,7 +61,7 @@ public class PredictionMaker {
             exportAsCSV(unlabeled, project.name);
 
         } catch (Exception e) {
-
+            LOGGER.severe(e.getMessage());
         }
     }
 
@@ -101,6 +104,7 @@ public class PredictionMaker {
                 writer.newLine();
             }
         } catch (IOException e) {
+            LOGGER.severe(e.getMessage());
         }
     }
 
