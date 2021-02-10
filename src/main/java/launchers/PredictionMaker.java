@@ -58,7 +58,7 @@ public class PredictionMaker {
             exportAsCSV(unlabeled, project.name);
 
         } catch (Exception e) {
-            e.printStackTrace();
+
         }
     }
 
@@ -101,7 +101,6 @@ public class PredictionMaker {
                 writer.newLine();
             }
         } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
